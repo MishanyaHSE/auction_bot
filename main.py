@@ -1,6 +1,7 @@
 import telebot
 from registration_handler import RegistrationHandler
 from interests_handler import InterestsHandler
+from add_items import NewItem
 import asyncio
 
 bot = telebot.TeleBot("6885951107:AAH6BJaLwZmO5L4Scf6F3IEt_Wdvdbm3nDk")
@@ -8,6 +9,7 @@ bot = telebot.TeleBot("6885951107:AAH6BJaLwZmO5L4Scf6F3IEt_Wdvdbm3nDk")
 states = {}
 reg_handlers = {}
 interests = {}
+items = {}
 
 counter = 0
 user_data = []
@@ -44,6 +46,18 @@ def open_profile(message):
         bot.send_message(message.chat.id, 'Необходимо зарегестрироваться и указать интересы')
 
 
+@bot.message_handler(commands=['add_item'])
+def add_item(message):
+    if message.chat.id in states and states[message.chat.id] != 'notRegistered':
+        states[message.chat.id] = 'on_adding_items'
+        if message.chat.id not in items:
+            items[message.chat.id] = []
+        items[message.chat.id].append(NewItem())
+        bot.send_message(message.chat.id, 'Давайте добавим предмет.')
+        current_bot_message = items[message.chat.id][len(items[message.chat.id]) - 1].create_item('')
+        bot.send_message(message.chat.id, current_bot_message)
+
+
 # Обработка всех текстовых сообщений, которые не являются командами
 @bot.message_handler(func=lambda message: True)
 def handle_request(message):
@@ -72,6 +86,9 @@ def handle_request(message):
         states[message.chat.id] = 'on_interest_survey'
     elif states[message.chat.id] == 'can_end_interest_survey' and (message.text == 'Нет' or message.text == 'нет'):
         states[message.chat.id] = 'on_main_menu'
+    elif states[message.chat.id] == 'on_adding_items':
+        current_bot_message = items[message.chat.id][len(items[message.chat.id]) - 1].create_item(message.text)
+        bot.send_message(message.chat.id, current_bot_message)
     else:
         bot.reply_to(message, states[message.chat.id])
 

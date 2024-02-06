@@ -9,7 +9,7 @@ class NewItem:
         self.document_availible = None
         self.comments = None
         self.states = {
-            'getBrand': 'Укажи бренд чсов, которые хотите воыставить на аукцион:',
+            'getBrand': 'Укажи бренд часов, которые хотите выставить на аукцион:',
             'getReference': 'Референс часов:',
             'getPrice': 'Цена (в долларах):',
             'getPhoto': 'Добавьте фото часов',
