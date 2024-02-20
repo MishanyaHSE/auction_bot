@@ -4,6 +4,7 @@ from interests_handler import InterestsHandler
 from add_items import NewItem
 import asyncio
 
+
 bot = telebot.TeleBot("6885951107:AAH6BJaLwZmO5L4Scf6F3IEt_Wdvdbm3nDk")
 
 states = {}
@@ -58,6 +59,23 @@ def add_item(message):
         bot.send_message(message.chat.id, current_bot_message)
 
 
+# создание клавиатуры
+def get_button_brand():
+    # переменная в которой хранятся все кнопки
+    markup_inline = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    item = NewItem()
+    for name_brand in item.all_brand: # создание кнопок
+        brand_button = telebot.types.KeyboardButton(text=name_brand)
+        markup_inline.add(brand_button)
+    return markup_inline
+
+
+# созадание фунции с переменной по удалению клавиатуры
+def remove_button_brand():
+    remove_markup = telebot.types.ReplyKeyboardRemove()
+    return remove_markup
+
+
 # Обработка всех текстовых сообщений, которые не являются командами
 @bot.message_handler(func=lambda message: True)
 def handle_request(message):
@@ -87,8 +105,14 @@ def handle_request(message):
     elif states[message.chat.id] == 'can_end_interest_survey' and (message.text == 'Нет' or message.text == 'нет'):
         states[message.chat.id] = 'on_main_menu'
     elif states[message.chat.id] == 'on_adding_items':
-        current_bot_message = items[message.chat.id][len(items[message.chat.id]) - 1].create_item(message.text)
-        bot.send_message(message.chat.id, current_bot_message)
+        if items[message.chat.id][len(items[message.chat.id]) - 1].currentState == 'getReference': # вывод кнопок когдв states getReference
+            bot.send_message(message.chat.id, 'Выберете бренд часов:', reply_markup=get_button_brand()) # сам вывод сообщения
+            items[message.chat.id][len(items[message.chat.id]) - 1].create_item(message.text) # проблема в том что пропускает заполнение референса
+        else:# идем дальше по заполнению item
+            current_bot_message = items[message.chat.id][len(items[message.chat.id]) - 1].create_item(message.text)
+            bot.send_message(message.chat.id, current_bot_message)
+        if items[message.chat.id][len(items[message.chat.id]) - 1].currentState == 'getComments': # удаление клавиатуры
+            bot.send_message(message.chat.id, 'Удалил клаву', reply_markup=remove_button_brand())
     else:
         bot.reply_to(message, states[message.chat.id])
 

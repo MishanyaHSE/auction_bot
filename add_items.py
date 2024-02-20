@@ -20,6 +20,15 @@ class NewItem:
             'end': ''
         }
         self.currentState = 'getBrand'
+        self.all_brand = ['Cartier', 'Breguet', 'Vacheron Constantin', 'Daniel Wellington', 'Audemars Piguet',
+                     'Jaeger-lecoultre', 'Chanel', 'Rolex', 'Franck Muller', 'Patek Philippe', 'Ulysse Nardin',
+                     'Hublot', 'Chopard', 'Parmigiani Fleurier', 'H. Moser & Cie', 'Montblanc', 'Jaeger-LeCoultre',
+                     'Gérald Genta', 'Omega', 'Breitling', 'Bovet', 'Urwerk', 'Gérald Genta', 'Piaget', 'Longines',
+                     'Iwc', 'Bulgari', 'Blancpain', 'Tudor', 'TAG Heuer', 'Girard-Perregaux', 'Arnold & Son',
+                     'Roger Dubuis', 'Ikepod', 'Romain Jerome', 'Harry Winston', 'Cvstos', 'Alain Silberstein',
+                     'Zenith', 'A. Lange & Söhne', 'A. Lange & Söhne', 'Corum', 'Panerai', 'H. Moser & Cie',
+                     'Chronoswiss', 'Glashütte Original', 'MB&F', 'Glashütte Original', 'Dewitt', 'Trilobe',
+                     'Bell & Ross', 'Junghans', 'Maurice Lacroix']
 
     def create_item(self, text):
         if self.currentState == 'getBrand':
@@ -27,6 +36,9 @@ class NewItem:
             return self.states['getBrand']
         elif self.currentState == 'getReference':
             self.brand = text
+            if self.brand not in self.all_brand:
+                self.currentState = 'getBrand'
+                return 'Выберете из ячеек', self.states['getBrand']
             self.currentState = 'getPrice'
             return self.states['getReference']
         elif self.currentState == 'getPrice':
