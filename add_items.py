@@ -33,7 +33,6 @@ class NewItem:
     def create_item(self, text):
         if self.currentState == 'getBrand':
             self.currentState = 'getReference'
-            return self.states['getBrand']
         elif self.currentState == 'getReference':
             self.brand = text
             if self.brand not in self.all_brand:

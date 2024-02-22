@@ -47,19 +47,7 @@ def open_profile(message):
         bot.send_message(message.chat.id, 'Необходимо зарегестрироваться и указать интересы')
 
 
-@bot.message_handler(commands=['add_item'])
-def add_item(message):
-    if message.chat.id in states and states[message.chat.id] != 'notRegistered':
-        states[message.chat.id] = 'on_adding_items'
-        if message.chat.id not in items:
-            items[message.chat.id] = []
-        items[message.chat.id].append(NewItem())
-        bot.send_message(message.chat.id, 'Давайте добавим предмет.')
-        current_bot_message = items[message.chat.id][len(items[message.chat.id]) - 1].create_item('')
-        bot.send_message(message.chat.id, current_bot_message)
-
-
-# создание клавиатуры
+# создание кнопок
 def get_button_brand():
     # переменная в которой хранятся все кнопки
     markup_inline = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
@@ -68,6 +56,20 @@ def get_button_brand():
         brand_button = telebot.types.KeyboardButton(text=name_brand)
         markup_inline.add(brand_button)
     return markup_inline
+
+
+@bot.message_handler(commands=['add_item'])
+def add_item(message):
+    if message.chat.id in states and states[message.chat.id] != 'notRegistered':
+        states[message.chat.id] = 'on_adding_items'
+        if message.chat.id not in items:
+            items[message.chat.id] = []
+        items[message.chat.id].append(NewItem())
+        bot.send_message(message.chat.id, 'Давайте добавим предмет.')
+        bot.send_message(message.chat.id, 'Укадите бренд часов', reply_markup=get_button_brand()) #вынес вывод сообщения с кнопками в функцию
+        current_bot_message = items[message.chat.id][len(items[message.chat.id]) - 1].create_item(message.text)
+        bot.send_message(message.chat.id, current_bot_message)
+# вынести часть создания бренда (сообщение) в add_item, туда прикрепить кнопки, и вынести вывод последнего сообщения, на прикрепить удаление клавиатуры
 
 
 # созадание фунции с переменной по удалению клавиатуры
@@ -105,14 +107,15 @@ def handle_request(message):
     elif states[message.chat.id] == 'can_end_interest_survey' and (message.text == 'Нет' or message.text == 'нет'):
         states[message.chat.id] = 'on_main_menu'
     elif states[message.chat.id] == 'on_adding_items':
-        if items[message.chat.id][len(items[message.chat.id]) - 1].currentState == 'getReference': # вывод кнопок когдв states getReference
-            bot.send_message(message.chat.id, 'Выберете бренд часов:', reply_markup=get_button_brand()) # сам вывод сообщения
+        current_bot_message = items[message.chat.id][len(items[message.chat.id]) - 1].create_item(message.text)
+        bot.send_message(message.chat.id, current_bot_message)
+        if items[message.chat.id][len(items[message.chat.id]) - 1].currentState == 'check':
+            current_bot_message = items[message.chat.id][len(items[message.chat.id]) - 1].create_item(message.text)
+            bot.send_message(message.chat.id, current_bot_message, reply_markup=remove_button_brand()) # сам вывод сообщения
             items[message.chat.id][len(items[message.chat.id]) - 1].create_item(message.text) # проблема в том что пропускает заполнение референса
-        else:# идем дальше по заполнению item
+        else: # идем дальше по заполнению item
             current_bot_message = items[message.chat.id][len(items[message.chat.id]) - 1].create_item(message.text)
             bot.send_message(message.chat.id, current_bot_message)
-        if items[message.chat.id][len(items[message.chat.id]) - 1].currentState == 'getComments': # удаление клавиатуры
-            bot.send_message(message.chat.id, 'Удалил клаву', reply_markup=remove_button_brand())
     else:
         bot.reply_to(message, states[message.chat.id])
 
