@@ -43,11 +43,13 @@ class RegistrationHandler:
             user_information = self.states['check'] + '\n' + self.get_user_profile() + f'Все верно?'
             self.currentState = 'end'
             return user_information
-        elif self.currentState == 'end' and text == 'да':
+        elif self.currentState == 'end' and text == 'Да':
             return 'Отлично! Регистрация завершена'
-        elif self.currentState == 'end' and text == 'нет':
+        elif self.currentState == 'end' and text == 'Нет':
             self.currentState = 'getSurname'
             return self.states['getName']
+        elif self.currentState == 'end':
+            return self.states['check'] + '\n' + self.get_user_profile() + f'Все верно?\n' + 'Необходимо нажать на одну из кнопок.'
         return ''
 
     def get_user_profile(self):
