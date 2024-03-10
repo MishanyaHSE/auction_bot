@@ -467,6 +467,7 @@ def handle_request(message):
                 save_bid(create_bid(int(message.text), message.chat.id, auction_id))
                 delta = get_auction(auction_id).duration - datetime.now()
                 if delta.total_seconds() // 60 <= minutes_to_end:
+                    print(delta.total_seconds() // 60)
                     update_auction_time(auction_id, 2)
                     scheduler.print_jobs()
                     scheduler.reschedule_job('end_auction_' + str(auction_id), 'date', run_date=get_auction(auction_id).duration)
