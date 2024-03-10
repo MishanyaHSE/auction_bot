@@ -309,7 +309,7 @@ def get_auction_buyers(auction_id):
 
 def update_auction_time(auction_id, added_minutes):
     with connection.session as db:
-        auction = get_auction(auction_id)
+        auction = db.get(Auction, auction_id)
         dt = auction.duration
         auction.duration = auction.duration.replace(minute=dt.minute + added_minutes)
         db.commit()

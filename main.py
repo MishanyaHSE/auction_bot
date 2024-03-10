@@ -5,6 +5,7 @@ from handlers.registration_handler import RegistrationHandler
 from handlers.interests_handler import InterestsHandler
 from handlers.item_handler import NewItem
 from handlers.auction_handler import AuctionHandler
+
 import asyncio
 from telebot import types
 from utility.utility import *
@@ -469,6 +470,7 @@ def handle_request(message):
                 if delta.total_seconds() // 60 <= minutes_to_end:
                     print(delta.total_seconds() // 60)
                     update_auction_time(auction_id, 2)
+                    print(get_auction(auction_id).duration)
                     scheduler.print_jobs()
                     scheduler.reschedule_job('end_auction_' + str(auction_id), 'date', run_date=get_auction(auction_id).duration)
                     scheduler.print_jobs()
@@ -487,4 +489,4 @@ def handle_request(message):
 
 
 scheduler.start()
-asyncio.run(bot.polling())
+bot.polling()
