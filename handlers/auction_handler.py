@@ -41,7 +41,7 @@ class AuctionHandler:
         elif self.currentState == 'check':
             # self.start_time = time(int(text.split(':')[0]), int(text.split(':')[1]))
             self.start_time = time(int(text.split(':')[0]), int(text.split(':')[1]))
-            end_time = time(int(text.split(':')[0]) + 1, int(text.split(':')[1]))
+            end_time = time(int(text.split(':')[0]), int(text.split(':')[1]) + 3)
             self.end_date_time = datetime.combine(self.start_date, end_time)
             self.start_date_time = datetime.combine(self.start_date, self.start_time)
             self.currentState = 'end'

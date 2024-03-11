@@ -250,9 +250,10 @@ def get_coming_auctions(user_id):
         for au_id in auctions_id:
             auctions.append(get_auction(au_id.auction_id))
         coming_auctions = []
-        for au in auctions:
-            if au.state == 'active' or au.state == 'going':
-                coming_auctions.append(au)
+        if all(auctions):
+            for au in auctions:
+                if au.state == 'active' or au.state == 'going':
+                    coming_auctions.append(au)
         return coming_auctions
 
 
@@ -313,3 +314,54 @@ def update_auction_time(auction_id, added_minutes):
         dt = auction.duration
         auction.duration = auction.duration.replace(minute=dt.minute + added_minutes)
         db.commit()
+
+
+def get_auction_to_participate(user_id):
+    with connection.session as db:
+        auctions = db.query(Auction).filter(or_(Auction.state == 'active', Auction.state == 'going')).all()
+        user_auctions_list = db.query(Buyer).filter(Buyer.buyer_id == user_id).all()
+        already_participate = []
+        for au in user_auctions_list:
+            already_participate.append(au.auction_id)
+        auctions_to_participate = []
+        for au in auctions:
+            if au.id not in already_participate:
+                auctions_to_participate.append(au.id)
+        return auctions_to_participate
+
+
+def update_winner_id(auction_id, user_id):
+    with connection.session as db:
+        auction = db.get(Auction, auction_id)
+        auction.winner_id = user_id
+        db.commit()
+
+
+def save_auto_bid(auto_bid):
+    with connection.session as db:
+        db.add(auto_bid)
+        db.commit()
+
+
+def get_valid_auto_bids(auction_id):
+    with connection.session as db:
+        current_max_bid = get_max_bid(auction_id)
+        auction = get_auction(auction_id)
+        auto_bids = db.query(AutoBid).filter(AutoBid.auction_id == auction_id).filter(AutoBid.amount > current_max_bid).order_by(AutoBid.amount).order_by(AutoBid.bid_time).desc.all()
+        if current_max_bid + auction.bid_step <= auto_bids[-2].amount:
+            if auto_bids[-1].amount >= auto_bids[-2].amount + auction.bid_step:
+                new_bid = Bid(amount=auto_bids[-2].amount + auction.bid_step, time=auto_bids[-1].bid_time, auction_id=auction_id, bidder_id=auto_bids[-1].bidder_id)
+                save_bid(new_bid)
+                db.commit()
+            elif auto_bids[-1].amount == auto_bids[-2].amount:
+                new_bid = Bid(amount=auto_bids[-2].amount + auction.bid_step, time=auto_bids[-1].bid_time, auction_id=auction_id, bidder_id=auto_bids[-1].bidder_id)
+                save_bid(new_bid)
+                db.commit()
+            elif auto_bids[-2].amount + auction.bid_step > auto_bids[-1]:
+                new_bid = Bid(amount=auto_bids[-2].amount + auction.bid_step, time=auto_bids[-2].bid_time, auction_id=auction_id, bidder_id=auto_bids[-2].bidder_id)
+                save_bid(new_bid)
+                db.commit()
+        elif current_max_bid + auction.bid_step <= auto_bids[-1].amount:
+            new_bid = Bid(amount=auto_bids[-1].amount + auction.bid_step, time=auto_bids[-1].bid_time, auction_id=auction_id, bidder_id=auto_bids[-1].bidder_id)
+            save_bid(new_bid)
+            db.commit()
