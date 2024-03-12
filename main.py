@@ -1,3 +1,4 @@
+import calendar
 from datetime import timedelta
 from handlers.registration_handler import RegistrationHandler
 from handlers.interests_handler import InterestsHandler
@@ -20,7 +21,7 @@ auction_handler = {}
 moderator_id = 436911675
 going_auctions = {}
 auction_messages = {}
-minutes_to_end = 1
+minutes_to_end = 0
 
 
 async def end_auction(auction_id):
@@ -63,16 +64,68 @@ async def start_auction(auction_id):
     await create_autobids_task(auction_id)
 
 
+async def unblock_users():
+    users = get_all_users()
+    for user in users:
+        if user.ban is not None and datetime.now() >= user.ban:
+            unblock_user(user.id)
+
+
 async def use_auto_bids(auction_id):
-    get_valid_auto_bids(auction_id)
+    result, previous_winner = get_valid_auto_bids(auction_id)
+    auction = get_auction(auction_id)
+    if result != 0:
+        for m in auction_messages[auction_id]:
+            try:
+                text = create_auction_message(get_auction(auction_id)) + '\nТекущая ставка: ' + str(
+                    get_max_bid(auction_id).amount)
+                if m.chat.id == auction.winner_id:
+                    text += '\n\n*Вы являетесь лидером аукциона*'
+                else:
+                    text += '\n\n*Вы не являетесь лидером аукциона*'
+                await bot.edit_message_text(chat_id=m.chat.id, message_id=m.id, text=text,
+                                            reply_markup=create_back_button(), parse_mode="Markdown")
+            except:
+                print("MESSAGE WAS NOT FOUND")
+                if m.chat.id == previous_winner:
+                    markup = types.InlineKeyboardMarkup()
+                    markup.add(types.InlineKeyboardButton('Перейти',
+                                                          callback_data='open_auction_' + str(auction.id)))
+                    msges = await bot.send_media_group(previous_winner,
+                                                       create_photos_for_item(get_item(auction.item_id)))
+                    photos_ids = ''
+                    for msg in msges:
+                        photos_ids += '_' + str(msg.id)
+                        messages_to_delete[previous_winner].append(msg.id)
+                    await send_and_save_with_markup(previous_winner,
+                                                    "ВАШУ СТАВКУ ПЕРЕБИЛИ\n" + create_auction_message(
+                                                        auction), markup)
     schedule.clear('auto_bids_' + str(auction_id))
 
 
-def give_state_to_all_registered_users():
+async def send_message_to_all_autobidders(auction_id, auction):
+    ids = get_auto_bidders(auction_id)
+    for id in ids:
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton('Перейти',
+                                              callback_data='open_auction_' + str(auction_id)))
+        msges = await bot.send_media_group(id,
+                                           create_photos_for_item(get_item(auction.item_id)))
+        photos_ids = ''
+        for msg in msges:
+            photos_ids += '_' + str(msg.id)
+            messages_to_delete[id].append(msg.id)
+        await send_and_save_with_markup(id,
+                                        "ВАШУ АВТОСТАВКУ ПЕРЕБИЛИ\n" + create_auction_message(
+                                            auction), markup)
+
+
+async def give_state_to_all_registered_users():
     users = get_all_users()
     for user in users:
         states[user.id] = 'on_main_menu'
         messages_to_delete[user.id] = []
+        await send_and_save(user.id, main_menu_message(user.id))
 
 
 def start_schedule_for_all_auctions():
@@ -85,8 +138,9 @@ def start_schedule_for_all_auctions():
             schedule.every().day.at(time).do(start_auction, auction.id).tag('start_auction_' + str(auction.id))
 
 
-give_state_to_all_registered_users()
+
 start_schedule_for_all_auctions()
+schedule.every().day.at('00:00').do(unblock_users)
 
 
 async def clear_chat(chat_id):
@@ -106,8 +160,8 @@ async def send_and_save(m_id, text):
     return res
 
 
-async def send_and_save_with_markup(m_id, text, markup):
-    res = await bot.send_message(m_id, text, reply_markup=markup)
+async def send_and_save_with_markup(m_id, text, markup, parse_mode=None):
+    res = await bot.send_message(m_id, text, reply_markup=markup, parse_mode=parse_mode)
     if messages_to_delete[m_id] is None:
         messages_to_delete[m_id] = []
     messages_to_delete[m_id].append(res.id)
@@ -135,6 +189,11 @@ async def send_auction_to_moderation(auction_id):
     markup = types.InlineKeyboardMarkup(row_width=1)
     markup.add(types.InlineKeyboardButton('Принять', callback_data='accept_' + str(auction_id)))
     markup.add(types.InlineKeyboardButton('Отклонить', callback_data='decline_' + str(auction_id)))
+    msges = await bot.send_media_group(moderator_id, create_photos_for_item(get_item(get_auction(auction_id).item_id)))
+    photos_ids = ''
+    for msg in msges:
+        photos_ids += '_' + str(msg.id)
+        messages_to_delete[moderator_id].append(msg.id)
     await send_and_save_with_markup(moderator_id, create_auction_message(get_auction(auction_id)), markup)
 
 
@@ -157,13 +216,16 @@ async def send_welcome_message(message):
         await send_and_save(message.chat.id, 'Добро пожаловать! Давайте Вас зарегистрируем.')
         await send_and_save(message.chat.id, reg_handlers[message.chat.id].do_registration(''))
     else:
-        await send_and_save(message.chat.id, main_menu_message)
+        await send_and_save(message.chat.id, main_menu_message(message.chat.id))
         # вывод приветственного сообщения
 
 
 @bot.message_handler(commands=['add_interest'])
 async def add_interest(message):
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
+        if is_blocked(message.chat.id):
+            await send_and_save(message.chat.id, 'К сожалению, вы были заблокированы. Обратитесь к модератору.')
+            return
         await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id].append(message.id)
         states[message.chat.id] = 'on_interest_survey'
@@ -178,6 +240,9 @@ async def add_interest(message):
 @bot.message_handler(commands=['profile'])
 async def open_profile(message):
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
+        if is_blocked(message.chat.id):
+            await send_and_save(message.chat.id, 'К сожалению, вы были заблокированы. Обратитесь к модератору.')
+            return
         await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id].append(message.id)
         user = get_user_info(message.chat.id)
@@ -190,16 +255,19 @@ async def open_profile(message):
 @bot.message_handler(commands=['coming_auctions'])
 async def open_coming_auctions(message):
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
+        if is_blocked(message.chat.id):
+            await send_and_save(message.chat.id, 'К сожалению, вы были заблокированы. Обратитесь к модератору.')
+            return
         await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id].append(message.id)
         auctions = get_coming_auctions(message.chat.id)
         if len(auctions) > 0:
             for au in auctions:
                 markup = types.InlineKeyboardMarkup()
-                if get_auto_bid(message.chat.id, au.id) is None:
+                if get_auto_bid(message.chat.id, au.id) is None and (au.duration - datetime.now()).total_seconds() // 60 > minutes_to_end:
                     markup.add(types.InlineKeyboardButton('Автоставка', callback_data='create_auto_bid_' + str(au.id)))
                 if au.state == 'going':
-                    markup.add(types.InlineKeyboardButton('Перейти', callback_data='open_auction_' + str(au.id)))
+                    markup.add(types.InlineKeyboardButton('Войти в аукцион', callback_data='open_auction_' + str(au.id)))
                 msges = await bot.send_media_group(message.chat.id, create_photos_for_item(get_item(au.item_id)))
                 photos_ids = ''
                 for msg in msges:
@@ -219,6 +287,9 @@ async def open_coming_auctions(message):
 @bot.message_handler(commands=['all_auctions'])
 async def open_coming_auctions(message):
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
+        if is_blocked(message.chat.id):
+            await send_and_save(message.chat.id, 'К сожалению, вы были заблокированы. Обратитесь к модератору.')
+            return
         await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id].append(message.id)
         au_ids = get_auction_to_participate(message.chat.id)
@@ -241,6 +312,9 @@ async def open_coming_auctions(message):
 @bot.message_handler(commands=['interests'])
 async def open_interests(message):
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
+        if is_blocked(message.chat.id):
+            await send_and_save(message.chat.id, 'К сожалению, вы были заблокированы. Обратитесь к модератору.')
+            return
         await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id].append(message.id)
         user_interests = get_interests(message.chat.id)
@@ -252,14 +326,48 @@ async def open_interests(message):
         else:
             await send_and_save(message.chat.id,
                                 'У вас нет ни одного фильтра. Чтобы добавить, используйте команду /add_interest')
-            await send_and_save(message.chat.id, main_menu_message)
+            await send_and_save(message.chat.id, main_menu_message(message.chat.id))
     else:
         await send_and_save(message.chat.id, 'Данную команду можно использовать только находясь в главном меню.')
+
+
+def create_unblock_button(user_id):
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    markup.add(types.InlineKeyboardButton('Разблокировать', callback_data='unblock_' + str(user_id)))
+    return markup
+
+
+def create_block_buttons(user_id):
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    markup.add(types.InlineKeyboardButton('Заблокировать на месяц', callback_data='small_block_' + str(user_id)))
+    markup.add(types.InlineKeyboardButton('Заблокировать навсегда', callback_data='block_' + str(user_id)))
+    return markup
+
+
+@bot.message_handler(commands=['show_users'])
+async def show_users(message):
+    if message.chat.id in states and states[message.chat.id] == 'on_main_menu' and message.chat.id == moderator_id:
+        users = get_all_users()
+        for user in users:
+            if user.id != moderator_id:
+                text = f'Имя: {user.username}\n' \
+                       f'Тег: @{user.nick}'
+                if is_blocked(user.id):
+                    markup = create_unblock_button(user.id)
+                    text += f'\n*Заблокирован до {str(user.ban)}*'
+                else:
+                    markup = create_block_buttons(user.id)
+                await send_and_save_with_markup(message.chat.id, text, markup, 'Markdown')
+    else:
+        await send_and_save(message.chat.id, 'Данную команду можно использовать только в главном меню, обладая правами модератора')
 
 
 @bot.message_handler(commands=['items'])
 async def open_items(message):
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
+        if is_blocked(message.chat.id):
+            await send_and_save(message.chat.id, 'К сожалению, вы были заблокированы. Обратитесь к модератору.')
+            return
         await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id].append(message.id)
         user_items = get_items(message.chat.id)
@@ -275,7 +383,10 @@ async def open_items(message):
                     messages_to_delete[message.chat.id].append(msg.id)
                 print(photos_ids)
                 markup.add(types.InlineKeyboardButton('Удалить', callback_data='item_' + str(item.id) + photos_ids))
-                await send_and_save_with_markup(message.chat.id, create_item_text(item), markup)
+                if is_item_on_auction(item.id):
+                    await send_and_save(message.chat.id, create_item_text(item))
+                else:
+                    await send_and_save_with_markup(message.chat.id, create_item_text(item), markup)
         else:
             await send_and_save(message.chat.id,
                                 'У вас нет ни одного предмета в профиле. Чтобы добавить, используйте команду /add_item')
@@ -286,6 +397,9 @@ async def open_items(message):
 @bot.message_handler(commands=['add_item'])
 async def add_item(message):
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
+        if is_blocked(message.chat.id):
+            await send_and_save(message.chat.id, 'К сожалению, вы были заблокированы. Обратитесь к модератору.')
+            return
         await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id].append(message.id)
         states[message.chat.id] = 'on_adding_items'
@@ -333,14 +447,21 @@ def create_back_button():
     return markup
 
 
+def main_menu_message(chat_id):
+    if chat_id == moderator_id:
+        return main_menu_message_for_moderator
+    return main_menu_mess
+
+
 @bot.callback_query_handler(func=lambda call: True)
 async def brand_buttons_action(call):
     if call.message:
-        if (call.data in all_brands or call.data in other_brands) and states[
-            call.message.chat.id] == 'on_interest_survey':
+        if (call.data in all_brands or call.data in other_brands) and states[call.message.chat.id] == 'on_interest_survey':
+            print('here1')
             await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id,
                                         text='Вы выбрали: ' + call.data)
             await send_and_save(call.message.chat.id, interests[call.message.chat.id].interest_survey(call.data))
+            print('here2')
         elif (call.data in all_brands or call.data in other_brands) and states[
             call.message.chat.id] == 'on_adding_items':
             await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id,
@@ -374,23 +495,39 @@ async def brand_buttons_action(call):
             auction_id = call.data.split('_')[1]
             auction = get_auction(auction_id)
             update_auction_state(auction_id, 'active')
+            await clear_chat(call.message.chat.id)
             await send_and_save(auction.owner_id,
                                 'Ваш аукцион был опубликован! Опубликованные аукционы можно посмотреть по команде /all_auctions')
             await send_notifications_about_auction(auction_id)
             print(str(auction.start_date.time()))
             time = str(auction.start_date.time())[:-3]
             print(time)
-            schedule.every().day.at(time).do(start_auction, auction_id).tag(
-                'start_auction_' + str(auction_id))
+            if datetime.now() < auction.start_date:
+                schedule.every().day.at(time).do(start_auction, auction_id).tag(
+                    'start_auction_' + str(auction_id))
+            elif auction.start_date < datetime.now() < auction.duration:
+                await start_auction(auction_id)
+        elif call.data.find('decline') != -1:
+            auction_id = call.data.split('_')[1]
+            auction = get_auction(auction_id)
+            update_auction_state(auction_id, 'declined')
+            await clear_chat(call.message.chat.id)
+            await send_and_save(auction.owner_id,
+                                'Ваш аукцион был отклонен! Убедитесь, что в объявлении не было ошибки или свяжитесь с модератором')
         elif call.data.find('participate') != -1:
             save_buyer(call.data.split('_')[1], call.message.chat.id)
             await send_and_save(call.message.chat.id,
                                 'Вы стали участником аукциона! Просмотреть приближающиеся аукционы можно командой /coming_auctions')
         elif call.data.find('open_auction') != -1:
             auction_id = call.data.split('_')[2]
+            state = ''
+            if call.message.chat.id == get_auction(auction_id).winner_id:
+                state = '\n\n*Вы являетесь лидером аукциона*'
+            else:
+                state = '\n\n*Вы не являетесь лидером аукциона*'
             await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id,
                                         text=call.message.text + '\nТекущая ставка: ' + str(
-                                            get_max_bid(auction_id).amount), reply_markup=create_back_button())
+                                            get_max_bid(auction_id).amount) + state, reply_markup=create_back_button(), parse_mode='Markdown')
             # msges = await bot.send_media_group(call.message.chat.id, create_photos_for_item(get_item(auction.item_id)))
             # photos_ids = ''
             # for msg in msges:
@@ -419,7 +556,30 @@ async def brand_buttons_action(call):
         elif call.data.find('back') != -1:
             states[call.message.chat.id] = 'on_main_menu'
             await clear_chat(call.message.chat.id)
-            await send_and_save(call.message.chat.id, main_menu_message)
+            await send_and_save(call.message.chat.id, main_menu_message(call.message.chat.id))
+        elif call.data.find('small_block_') != -1:
+            user_id = call.data.split('_')[2]
+            date = datetime.now()
+            days_in_month = calendar.monthrange(date.year, date.month)[1]
+            date += timedelta(days=days_in_month)
+            block_user(user_id, date)
+            await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id,
+                                        text=call.message.text + f'\n\n*Заблокирован до {str(date)}*',
+                                        reply_markup=create_unblock_button(user_id), parse_mode='Markdown')
+        elif call.data.find('unblock') != -1:
+            user_id = call.data.split('_')[1]
+            unblock_user(user_id)
+            text = call.message.text.split('\n')[0] + '\n' + call.message.text.split('\n')[1]
+            await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id,
+                                        text=text, reply_markup=create_block_buttons(user_id))
+        elif call.data.find('block') != -1:
+            user_id = call.data.split('_')[1]
+            date = datetime.now()
+            date = date.replace(year=date.year + 30)
+            block_user(user_id, date)
+            await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id,
+                                        text=call.message.text + f'*\n\nЗаблокирован до {str(date)}*',
+                                        reply_markup=create_unblock_button(user_id), parse_mode='Markdown')
 
 
 def create_yes_or_no_button():
@@ -453,7 +613,7 @@ async def save_photos_to_folder(info_list, item_id):
 def create_user(user_id):
     hl = reg_handlers[user_id]
     return User(id=user_id, username=hl.name + ' ' + hl.surname, company_name=hl.company_name,
-                company_website=hl.website, phone=hl.phone, nick=hl.nick)
+                company_website=hl.website, phone=hl.phone, nick=hl.nick, ban=None)
 
 
 def create_photo(name, id):
@@ -507,10 +667,13 @@ async def get_item_photos(message):
 @bot.message_handler(func=lambda message: True)
 async def handle_request(message):
     messages_to_delete[message.chat.id].append(message.id)
+    if is_blocked(message.chat.id):
+        await send_and_save(message.chat.id, 'К сожалению, вы были заблокированы. Обратитесь к модератору.')
+        return
     if message.text == 'Назад':
         states[message.chat.id] = 'on_main_menu'
         await clear_chat(message.chat.id)
-        await send_and_save(message.chat.id, main_menu_message)
+        await send_and_save(message.chat.id, main_menu_message(message.chat.id))
     if states[
         message.chat.id] == 'notRegistered':  # Данный статус только в том случае, если человек не завершил регистрацию и зашел в бота впервые
         current_bot_message = reg_handlers[message.chat.id].do_registration(
@@ -538,7 +701,7 @@ async def handle_request(message):
         if message.text == 'Пропустить':
             states[message.chat.id] = 'on_main_menu'
             await clear_chat(message.chat.id)
-            await send_and_save_with_markup(message.chat.id, main_menu_message, telebot.types.ReplyKeyboardRemove())
+            await send_and_save_with_markup(message.chat.id, main_menu_message(message.chat.id), telebot.types.ReplyKeyboardRemove())
             return
         current_bot_message = interests[message.chat.id].interest_survey(message.text)
         if interests[message.chat.id].currentState == 'getMinPrice':
@@ -559,13 +722,16 @@ async def handle_request(message):
     elif states[message.chat.id] == 'can_end_interest_survey' and (message.text == 'Нет' or message.text == 'нет'):
         await clear_chat(message.chat.id)
         states[message.chat.id] = 'on_main_menu'
-        await send_and_save(message.chat.id, main_menu_message)
+        await send_and_save(message.chat.id, main_menu_message(message.chat.id))
     elif states[message.chat.id] == 'on_adding_items':
         if items[message.chat.id].currentState != 'getBox_available':
             current_bot_message = items[message.chat.id].create_item(message.text)
             if current_bot_message.find('коробка') != -1 or current_bot_message.find(
                     'Документы') != -1 or current_bot_message.find('Необходимо') != -1 or \
                     current_bot_message.find('Желаете добавить еще один') != -1:
+                if current_bot_message.find('Желаете добавить еще один') != -1 and len(items[message.chat.id].photos) < 3:
+                    current_bot_message = 'Не удалось добавить предмет. Вы прикрепили меньше 3-х фотографий. Желаете заново добавить предмет?'
+                    states[message.chat.id] = 'can_end_item_survey'
                 await send_and_save_with_markup(message.chat.id, current_bot_message, create_yes_or_no_button())
             else:
                 await send_and_save_with_markup(message.chat.id, current_bot_message,
@@ -583,11 +749,11 @@ async def handle_request(message):
         items[message.chat.id] = NewItem()
         current_bot_message = items[message.chat.id].create_item('')
         await send_and_save_with_markup(message.chat.id, current_bot_message, create_brand_buttons())
-        states[message.chat.id] = 'on_item_survey'
+        states[message.chat.id] = 'on_adding_items'
     elif states[message.chat.id] == 'can_end_item_survey' and (message.text == 'Нет' or message.text == 'нет'):
         await clear_chat(message.chat.id)
         states[message.chat.id] = 'on_main_menu'
-        await send_and_save(message.chat.id, main_menu_message)
+        await send_and_save(message.chat.id, main_menu_message(message.chat.id))
     elif states[message.chat.id] == 'creating_auction':
         current_bot_message = auction_handler[message.chat.id].create_auction(message.text)
         if auction_handler[message.chat.id].currentState == 'end':
@@ -599,7 +765,7 @@ async def handle_request(message):
         if current_bot_message == 'Отлично! Аукцион создан и отправлен на модерацию':
             await clear_chat(message.chat.id)
             states[message.chat.id] = 'on_main_menu'
-            await send_and_save(message.chat.id, main_menu_message)
+            await send_and_save(message.chat.id, main_menu_message(message.chat.id))
             new_auction_id = save_auction(create_auction(message.chat.id))
             auction = get_auction(new_auction_id)
             save_bid(
@@ -630,24 +796,25 @@ async def handle_request(message):
                         try:
                             text = create_auction_message(get_auction(auction_id)) + '\nТекущая ставка: ' + str(get_max_bid(auction_id).amount)
                             if m.chat.id == auction.winner_id:
-                                text += '\n\nВы являетесь лидером аукциона'
+                                text += '\n\n*Вы являетесь лидером аукциона*'
                             else:
-                                text += '\n\nВы не являетесь лидером аукциона'
-                            await bot.edit_message_text(chat_id=m.chat.id, message_id=m.id, text=text, reply_markup=create_back_button())
+                                text += '\n\n*Вы не являетесь лидером аукциона*'
+                            await bot.edit_message_text(chat_id=m.chat.id, message_id=m.id, text=text, reply_markup=create_back_button(), parse_mode="Markdown")
                         except:
                             print("MESSAGE WAS NOT FOUND")
                             if m.chat.id == previous_winner:
-                                flag = True
-                    if flag:
-                        markup = types.InlineKeyboardMarkup()
-                        markup.add(types.InlineKeyboardButton('Перейти', callback_data='open_auction_' + str(auction.id)))
-                        msges = await bot.send_media_group(previous_winner,
-                                                           create_photos_for_item(get_item(auction.item_id)))
-                        photos_ids = ''
-                        for msg in msges:
-                            photos_ids += '_' + str(msg.id)
-                            messages_to_delete[message.chat.id].append(msg.id)
-                        await send_and_save_with_markup(previous_winner, "ВАШУ СТАВКУ ПЕРЕБИЛИ\n" + create_auction_message(auction), markup)
+                                markup = types.InlineKeyboardMarkup()
+                                markup.add(types.InlineKeyboardButton('Перейти',
+                                                                      callback_data='open_auction_' + str(auction.id)))
+                                msges = await bot.send_media_group(previous_winner,
+                                                                   create_photos_for_item(get_item(auction.item_id)))
+                                photos_ids = ''
+                                for msg in msges:
+                                    photos_ids += '_' + str(msg.id)
+                                    messages_to_delete[previous_winner].append(msg.id)
+                                await send_and_save_with_markup(previous_winner,
+                                                                "ВАШУ СТАВКУ ПЕРЕБИЛИ\n" + create_auction_message(
+                                                                    auction), markup)
                 else:
                     await send_and_save(message.chat.id, 'Ставка должна быть кратна шагу аукциона')
             else:
@@ -664,7 +831,7 @@ async def handle_request(message):
                     states[message.chat.id] = 'on_main_menu'
                     await clear_chat(message.chat.id)
                     await send_and_save(message.chat.id, f'Автоставка успешно добавлена, сумма - {message.text}')
-                    await send_and_save(message.chat.id, main_menu_message)
+                    await send_and_save(message.chat.id, main_menu_message(message.chat.id))
                 else:
                     await send_and_save(message.chat.id, 'Сумма автоставки должна быть кратна шагу аукциона')
             else:
@@ -683,7 +850,7 @@ async def handle_request(message):
                     states[message.chat.id] = 'on_main_menu'
                     await clear_chat(message.chat.id)
                     await send_and_save(message.chat.id, f'Автоставка успешно изменена, сумма - {message.text}')
-                    await send_and_save(message.chat.id, main_menu_message)
+                    await send_and_save(message.chat.id, main_menu_message(message.chat.id))
                 else:
                     await send_and_save(message.chat.id, 'Сумма автоставки должна быть кратна шагу аукциона')
             else:
@@ -701,6 +868,7 @@ async def scheduler():
 
 
 async def main():
+    await give_state_to_all_registered_users()
     await asyncio.gather(bot.infinity_polling(), scheduler())
 
 

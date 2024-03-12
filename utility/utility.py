@@ -12,7 +12,7 @@ other_brands = ['Alain Silberstein', 'Arnold Son', 'Blancpain', 'Bovet', 'Chopar
                 'Ressence', 'Roger Dubuis', 'Romain Jerome', 'Tudor', 'Urwerk', 'Zenith']
 
 
-main_menu_message = f'Вы находитесь в главном меню, используйте команды для управления ботом:\n' \
+main_menu_mess = f'Вы находитесь в главном меню, используйте команды для управления ботом:\n' \
                     f'/all_auctions - Просмотр списка приближающихся и начавшихся аукционов, в которых вы еще не участвуете\n' \
                     f'/coming_auctions - Просмотр списка приближающихся и начавшихся аукционов, в которых вы участвуете\n' \
                     f'/add_interest - Добавление фильтра объявлений\n' \
@@ -22,7 +22,8 @@ main_menu_message = f'Вы находитесь в главном меню, ис
                     f'/profile - Просмотр профиля'
 
 
-main_menu_message_for_moderator = main_menu_message + '\n\n' + 'Список команд модератора:\n'
+main_menu_message_for_moderator = main_menu_mess + '\n\n' + 'Список команд модератора:\n' \
+                                                               '/show_users - открыть список пользователей для блокировки или разблокировки\n'
 
 def is_positive_number(s):
     try:

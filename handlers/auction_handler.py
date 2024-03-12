@@ -52,11 +52,10 @@ class AuctionHandler:
                 hours = int(hours)
                 minutes = int(minutes)
                 self.start_time = time(hours, minutes)
-                # if minutes + 10 <= 59:
-                #     end_time = time(hours, minutes + 10)
-                # else:
-                #     end_time = time(hours + 1, (minutes + 10) % 60)
-                end_time = time(hours, minutes + 3)
+                if minutes + 2 <= 59:
+                    end_time = time(hours, minutes + 2)
+                else:
+                    end_time = time(hours + 1, (minutes + 2) % 60)
                 self.end_date_time = datetime.combine(self.start_date, end_time)
                 self.start_date_time = datetime.combine(self.start_date, self.start_time)
                 self.currentState = 'end'
