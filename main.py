@@ -26,7 +26,11 @@ minutes_to_end = 2
 async def end_auction(auction_id):
     buyers = get_auction_buyers(auction_id)
     auction = get_auction(auction_id)
+    item = get_item(auction.item_id)
     update_auction_state(auction_id, 'finished')
+    if get_max_bid(auction_id) == item.price:
+        await send_and_save(item.owner_id, 'К сожалению, аукцион не состоялся, ни один пользователь не сделал ставку.')
+        return
     for buyer in buyers:
         if buyer.buyer_id == auction.winner_id:
             await send_and_save(buyer.buyer_id,
@@ -87,6 +91,7 @@ async def send_and_save(m_id, text):
     if messages_to_delete[m_id] is None:
         messages_to_delete[m_id] = []
     messages_to_delete[m_id].append(res.id)
+    return res
 
 
 async def send_and_save_with_markup(m_id, text, markup):
@@ -140,82 +145,91 @@ async def send_welcome_message(message):
         await send_and_save(message.chat.id, 'Добро пожаловать! Давайте Вас зарегистрируем.')
         await send_and_save(message.chat.id, reg_handlers[message.chat.id].do_registration(''))
     else:
-        pass
+        await send_and_save(message.chat.id, main_menu_message)
         # вывод приветственного сообщения
 
 
 @bot.message_handler(commands=['add_interest'])
 async def add_interest(message):
-    await clear_chat(message.chat.id)
-    messages_to_delete[message.chat.id].append(message.id)
-    if message.chat.id in states and states[message.chat.id] != 'notRegistered':
+    if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
+        await clear_chat(message.chat.id)
+        messages_to_delete[message.chat.id].append(message.id)
         states[message.chat.id] = 'on_interest_survey'
         interests[message.chat.id] = InterestsHandler()
         current_bot_message = interests[message.chat.id].interest_survey('')
         await send_and_save_with_markup(message.chat.id, current_bot_message, create_brand_buttons())
     else:
-        await send_and_save(message.chat.id, 'Сперва необходимо завершить регистрацию')
+        await send_and_save(message.chat.id, 'Данную команду можно использовать только находясь в главном меню.')
 
 
 # Обрабатываем команду profile, выводим информацию о профиле отправившего команду
 @bot.message_handler(commands=['profile'])
 async def open_profile(message):
-    await clear_chat(message.chat.id)
-    messages_to_delete[message.chat.id].append(message.id)
-    if message.chat.id in states and states[message.chat.id] != 'notRegistered':
+    if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
+        await clear_chat(message.chat.id)
+        messages_to_delete[message.chat.id].append(message.id)
         user = get_user_info(message.chat.id)
         current_bot_message = create_user_info_message(user)
         await send_and_save(message.chat.id, current_bot_message)
     else:
-        await send_and_save(message.chat.id, 'Вы еще не зарегистрированы')
+        await send_and_save(message.chat.id, 'Данную команду можно использовать только после регистрации, находясь в главном меню.')
 
 
 @bot.message_handler(commands=['coming_auctions'])
 async def open_coming_auctions(message):
-    await clear_chat(message.chat.id)
-    messages_to_delete[message.chat.id].append(message.id)
-    auctions = get_coming_auctions(message.chat.id)
-    if len(auctions) > 0:
-        for au in auctions:
-            markup = types.InlineKeyboardMarkup()
-            markup.add(types.InlineKeyboardButton('Автоставка', callback_data='auto_bid_' + str(au.id)))
-            if au.state == 'going':
-                markup.add(types.InlineKeyboardButton('Перейти', callback_data='open_auction_' + str(au.id)))
-            msges = await bot.send_media_group(message.chat.id, create_photos_for_item(get_item(au.item_id)))
-            photos_ids = ''
-            for msg in msges:
-                photos_ids += '_' + str(msg.id)
-                messages_to_delete[message.chat.id].append(msg.id)
-            await send_and_save_with_markup(message.chat.id, create_auction_message(au), markup)
+    if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
+        await clear_chat(message.chat.id)
+        messages_to_delete[message.chat.id].append(message.id)
+        auctions = get_coming_auctions(message.chat.id)
+        if len(auctions) > 0:
+            for au in auctions:
+                markup = types.InlineKeyboardMarkup()
+                if get_auto_bid(message.chat.id, au.id) is None:
+                    markup.add(types.InlineKeyboardButton('Автоставка', callback_data='create_auto_bid_' + str(au.id)))
+                if au.state == 'going':
+                    markup.add(types.InlineKeyboardButton('Перейти', callback_data='open_auction_' + str(au.id)))
+                msges = await bot.send_media_group(message.chat.id, create_photos_for_item(get_item(au.item_id)))
+                photos_ids = ''
+                for msg in msges:
+                    photos_ids += '_' + str(msg.id)
+                    messages_to_delete[message.chat.id].append(msg.id)
+                await send_and_save_with_markup(message.chat.id, create_auction_message(au), markup)
+                is_changeable = True
+                if (au.duration - datetime.now()).total_seconds() // 60 <= minutes_to_end:
+                    is_changeable = False
+                await create_and_send_auto_bid_message(message.chat.id, au.id, is_changeable)
+        else:
+            await send_and_save(message.chat.id, 'Вы не участвуете ни в одном активном аукционе. Чтобы просмотреть доступные аукционы, используйте команду ')
     else:
-        await send_and_save(message.chat.id, 'Вы не участвуете ни в одном активном аукционе. Чтобы просмотреть доступные аукционы, используйте команду ')
+        await send_and_save(message.chat.id, 'Данную команду можно использовать только находясь в главном меню.')
 
 
 @bot.message_handler(commands=['all_auctions'])
 async def open_coming_auctions(message):
-    await clear_chat(message.chat.id)
-    messages_to_delete[message.chat.id].append(message.id)
-    au_ids = get_auction_to_participate(message.chat.id)
-    for id in au_ids:
-        auction = get_auction(id)
-        msges = await bot.send_media_group(message.chat.id, create_photos_for_item(get_item(auction.item_id)))
-        photos_ids = ''
-        for msg in msges:
-            photos_ids += '_' + str(msg.id)
-            messages_to_delete[message.chat.id].append(msg.id)
-        await send_and_save_with_markup(message.chat.id, create_auction_message(auction), create_button_to_part_in_auction(id))
-
+    if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
+        await clear_chat(message.chat.id)
+        messages_to_delete[message.chat.id].append(message.id)
+        au_ids = get_auction_to_participate(message.chat.id)
+        for id in au_ids:
+            auction = get_auction(id)
+            msges = await bot.send_media_group(message.chat.id, create_photos_for_item(get_item(auction.item_id)))
+            photos_ids = ''
+            for msg in msges:
+                photos_ids += '_' + str(msg.id)
+                messages_to_delete[message.chat.id].append(msg.id)
+            await send_and_save_with_markup(message.chat.id, create_auction_message(auction), create_button_to_part_in_auction(id))
+    else:
+        await send_and_save(message.chat.id, 'Данную команду можно использовать только находясь в главном меню.')
 
 
 # Отправляем отдельными сообщениями все интересы данного пользователя
 @bot.message_handler(commands=['interests'])
 async def open_interests(message):
-    await clear_chat(message.chat.id)
-    messages_to_delete[message.chat.id].append(message.id)
-    if message.chat.id in states and states[message.chat.id] != 'notRegistered':
+    if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
+        await clear_chat(message.chat.id)
+        messages_to_delete[message.chat.id].append(message.id)
         user_interests = get_interests(message.chat.id)
         if user_interests.first() is not None:
-            await send_and_save(message.chat.id, 'Список ваших фильтров:')
             for interest in user_interests:
                 markup = types.InlineKeyboardMarkup(row_width=1)
                 markup.add(types.InlineKeyboardButton('Удалить', callback_data='interest_' + str(interest.id)))
@@ -223,18 +237,18 @@ async def open_interests(message):
         else:
             await send_and_save(message.chat.id,
                                 'У вас нет ни одного фильтра. Чтобы добавить, используйте команду /add_interest')
+            await send_and_save(message.chat.id, main_menu_message)
     else:
-        await send_and_save(message.chat.id, 'Необходимо зарегестрироваться и указать интересы')
+        await send_and_save(message.chat.id, 'Данную команду можно использовать только находясь в главном меню.')
 
 
 @bot.message_handler(commands=['items'])
 async def open_items(message):
-    await clear_chat(message.chat.id)
-    messages_to_delete[message.chat.id].append(message.id)
-    if message.chat.id in states and states[message.chat.id] != 'notRegistered':
+    if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
+        await clear_chat(message.chat.id)
+        messages_to_delete[message.chat.id].append(message.id)
         user_items = get_items(message.chat.id)
         if user_items.first() is not None:
-            await send_and_save(message.chat.id, 'Список ваших предметов:')
             for item in user_items:
                 markup = types.InlineKeyboardMarkup(row_width=1)
                 markup.add(
@@ -251,20 +265,35 @@ async def open_items(message):
             await send_and_save(message.chat.id,
                                 'У вас нет ни одного предмета в профиле. Чтобы добавить, используйте команду /add_item')
     else:
-        await send_and_save(message.chat.id, 'Необходимо зарегестрироваться и добавить предметы интересы')
+        await send_and_save(message.chat.id, 'Данную команду можно использовать только находясь в главном меню.')
 
 
 @bot.message_handler(commands=['add_item'])
 async def add_item(message):
-    await clear_chat(message.chat.id)
-    messages_to_delete[message.chat.id].append(message.id)
-    if message.chat.id in states and states[message.chat.id] != 'notRegistered':
+    if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
+        await clear_chat(message.chat.id)
+        messages_to_delete[message.chat.id].append(message.id)
         states[message.chat.id] = 'on_adding_items'
         items[message.chat.id] = NewItem()
         current_bot_message = items[message.chat.id].create_item('')
         await send_and_save_with_markup(message.chat.id, current_bot_message, create_brand_buttons())
     else:
-        await send_and_save(message.chat.id, 'Сперва необходимо завершить регистрацию')
+        await send_and_save(message.chat.id, 'Данную команду можно использовать только находясь в главном меню.')
+
+
+async def create_and_send_auto_bid_message(chat_id, auction_id, is_changable):
+    auto_bid = get_auto_bid(chat_id, auction_id)
+    if auto_bid is not None:
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton('Изменить', callback_data='change_auto_bid_' + str(auto_bid.id)))
+        markup.add(types.InlineKeyboardButton('Удалить', callback_data='delete_auto_bid_' + str(auto_bid.id)))
+        text = f'Автоставка: {auto_bid.amount}'
+        if is_changable:
+            await send_and_save_with_markup(chat_id, text, markup)
+        else:
+            await send_and_save(chat_id, text)
+    else:
+        return
 
 
 def create_brand_buttons():
@@ -280,6 +309,12 @@ def create_additional_brands():
     for brand in other_brands:
         markup.add(types.InlineKeyboardButton(brand, callback_data=brand))
     markup.add(types.InlineKeyboardButton('Назад', callback_data='open_main_brands'))
+    return markup
+
+
+def create_back_button():
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton('Назад', callback_data='back'))
     return markup
 
 
@@ -340,16 +375,36 @@ async def brand_buttons_action(call):
             auction_id = call.data.split('_')[2]
             await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id,
                                         text=call.message.text + '\nТекущая ставка: ' + str(
-                                            get_max_bid(auction_id).amount))
+                                            get_max_bid(auction_id).amount), reply_markup=create_back_button())
+            # msges = await bot.send_media_group(call.message.chat.id, create_photos_for_item(get_item(auction.item_id)))
+            # photos_ids = ''
+            # for msg in msges:
+            #     photos_ids += '_' + str(msg.id)
+            #     messages_to_delete[message.chat.id].append(msg.id)
+            # await send_and_save_with_markup(message.chat.id, create_auction_message(au), markup)
+            # auct_message = await send_and_save(call.message.chat.id, )
+            # asd;,as[dk]
             going_auctions[call.message.chat.id] = auction_id
             if auction_id not in auction_messages:
                 auction_messages[auction_id] = []
             auction_messages[auction_id].append(call.message)
             states[call.message.chat.id] = 'on_auction_' + str(auction_id)
-        elif call.data.find('auto_bid') != -1:
-            auction_id = call.data.split('_')[2]
+        elif call.data.find('create_auto_bid_') != -1:
+            auction_id = call.data.split('_')[3]
             states[call.message.chat.id] = 'creating_auto_bid_' + str(auction_id)
             await send_and_save(call.message.chat.id, 'Введите сумму автоставки:')
+        elif call.data.find('change_auto_bid') != -1:
+            auto_bid_id = call.data.split('_')[3]
+            states[call.message.chat.id] = 'changing_auto_bid_' + auto_bid_id
+            await send_and_save(call.message.chat.id, 'Введите новую сумму автоставки:')
+        elif call.data.find('delete_auto_bid') != -1:
+            auto_bid_id = int(call.data.split('_')[3])
+            await bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.id)
+            delete_auto_bid(auto_bid_id)
+        elif call.data.find('back') != -1:
+            states[call.message.chat.id] = 'on_main_menu'
+            await clear_chat(call.message.chat.id)
+            await send_and_save(call.message.chat.id, main_menu_message)
 
 
 def create_yes_or_no_button():
@@ -357,6 +412,12 @@ def create_yes_or_no_button():
     yes = types.KeyboardButton('Да')
     no = types.KeyboardButton('Нет')
     markup.add(yes, no)
+    return markup
+
+
+def create_skip_button():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    markup.add(types.KeyboardButton('Пропустить'))
     return markup
 
 
@@ -431,6 +492,10 @@ async def get_item_photos(message):
 @bot.message_handler(func=lambda message: True)
 async def handle_request(message):
     messages_to_delete[message.chat.id].append(message.id)
+    if message.text == 'Назад':
+        states[message.chat.id] = 'on_main_menu'
+        await clear_chat(message.chat.id)
+        await send_and_save(message.chat.id, main_menu_message)
     if states[
         message.chat.id] == 'notRegistered':  # Данный статус только в том случае, если человек не завершил регистрацию и зашел в бота впервые
         current_bot_message = reg_handlers[message.chat.id].do_registration(
@@ -447,16 +512,21 @@ async def handle_request(message):
                                             'Теперь давайте поговорим о ваших интересах! Вы можете нажать '
                                             '"пропустить" '
                                             'и заполнить эту информацию позже в профиле.',
-                                            telebot.types.ReplyKeyboardRemove())
+                                            create_skip_button())
             interests[message.chat.id] = InterestsHandler()
             current_bot_message = interests[message.chat.id].interest_survey(
                 '')  # Для каждого айди создаем массив интересов, после добавленя бд - переписать
             await send_and_save_with_markup(message.chat.id, current_bot_message, create_brand_buttons())
     elif states[message.chat.id] == 'on_interest_survey':  # по айди чата вызываем функцию добавления интереса
+        if message.text == 'Пропустить':
+            states[message.chat.id] = 'on_main_menu'
+            await clear_chat(message.chat.id)
+            await send_and_save_with_markup(message.chat.id, main_menu_message, telebot.types.ReplyKeyboardRemove())
+            return
         current_bot_message = interests[message.chat.id].interest_survey(message.text)
         if interests[message.chat.id].currentState == 'getMinPrice':
             await send_and_save_with_markup(message.chat.id, current_bot_message, create_brand_buttons())
-        elif current_bot_message.find('верно') != -1:
+        elif current_bot_message.find('верно') != -1 or current_bot_message.find('Фильтр объявлений добавлен') != -1:
             await send_and_save_with_markup(message.chat.id, current_bot_message, create_yes_or_no_button())
         else:
             await send_and_save_with_markup(message.chat.id, current_bot_message, telebot.types.ReplyKeyboardRemove())
@@ -472,11 +542,13 @@ async def handle_request(message):
     elif states[message.chat.id] == 'can_end_interest_survey' and (message.text == 'Нет' or message.text == 'нет'):
         await clear_chat(message.chat.id)
         states[message.chat.id] = 'on_main_menu'
+        await send_and_save(message.chat.id, main_menu_message)
     elif states[message.chat.id] == 'on_adding_items':
         if items[message.chat.id].currentState != 'getBox_available':
             current_bot_message = items[message.chat.id].create_item(message.text)
             if current_bot_message.find('коробка') != -1 or current_bot_message.find(
-                    'Документы') != -1 or current_bot_message.find('Необходимо') != -1:
+                    'Документы') != -1 or current_bot_message.find('Необходимо') != -1 or \
+                    current_bot_message.find('Желаете добавить еще один') != -1:
                 await send_and_save_with_markup(message.chat.id, current_bot_message, create_yes_or_no_button())
             else:
                 await send_and_save_with_markup(message.chat.id, current_bot_message,
@@ -498,6 +570,7 @@ async def handle_request(message):
     elif states[message.chat.id] == 'can_end_item_survey' and (message.text == 'Нет' or message.text == 'нет'):
         await clear_chat(message.chat.id)
         states[message.chat.id] = 'on_main_menu'
+        await send_and_save(message.chat.id, main_menu_message)
     elif states[message.chat.id] == 'creating_auction':
         current_bot_message = auction_handler[message.chat.id].create_auction(message.text)
         if auction_handler[message.chat.id].currentState == 'end':
@@ -507,7 +580,9 @@ async def handle_request(message):
         else:
             await send_and_save(message.chat.id, current_bot_message)
         if current_bot_message == 'Отлично! Аукцион создан и отправлен на модерацию':
+            await clear_chat(message.chat.id)
             states[message.chat.id] = 'on_main_menu'
+            await send_and_save(message.chat.id, main_menu_message)
             new_auction_id = save_auction(create_auction(message.chat.id))
             auction = get_auction(new_auction_id)
             save_bid(
@@ -518,23 +593,26 @@ async def handle_request(message):
             auction_id = states[message.chat.id].split('_')[2]
             current_bid = get_max_bid(auction_id).amount
             if int(message.text) - current_bid >= get_auction(auction_id).bid_step:
-                save_bid(create_bid(int(message.text), message.chat.id, auction_id))
-                delta = get_auction(auction_id).duration - datetime.now()
-                if delta.total_seconds() // 60 <= minutes_to_end:
-                    print(delta.total_seconds() // 60)
-                    update_auction_time(auction_id, 1)
-                    print(get_auction(auction_id).duration)
-                    schedule.clear('end_auction_' + str(auction_id))
-                    schedule.clear('auto_bids_' + str(auction_id))
-                    await create_autobids_task(auction_id)
-                    await create_end_auction_task(auction_id)
-                update_winner_id(auction_id, message.chat.id)
-                for m in auction_messages[auction_id]:
-                    try:
-                        text = create_auction_message(get_auction(auction_id)) + '\nТекущая ставка: ' + str(get_max_bid(auction_id).amount)
-                        await bot.edit_message_text(chat_id=m.chat.id, message_id=m.id, text=text)
-                    except:
-                        print("MESSAGE WAS NOT FOUND")
+                if int(message.text) % get_auction(auction_id).bid_step == 0:
+                    save_bid(create_bid(int(message.text), message.chat.id, auction_id))
+                    delta = get_auction(auction_id).duration - datetime.now()
+                    if delta.total_seconds() // 60 <= minutes_to_end:
+                        print(delta.total_seconds() // 60)
+                        update_auction_time(auction_id, 1)
+                        print(get_auction(auction_id).duration)
+                        schedule.clear('end_auction_' + str(auction_id))
+                        schedule.clear('auto_bids_' + str(auction_id))
+                        await create_autobids_task(auction_id)
+                        await create_end_auction_task(auction_id)
+                    update_winner_id(auction_id, message.chat.id)
+                    for m in auction_messages[auction_id]:
+                        try:
+                            text = create_auction_message(get_auction(auction_id)) + '\nТекущая ставка: ' + str(get_max_bid(auction_id).amount)
+                            await bot.edit_message_text(chat_id=m.chat.id, message_id=m.id, text=text, reply_markup=create_back_button())
+                        except:
+                            print("MESSAGE WAS NOT FOUND")
+                else:
+                    await send_and_save(message.chat.id, 'Ставка должна быть кратна шагу аукциона')
             else:
                 await send_and_save(message.chat.id, 'Ставка должна превышать текущую минимум на шаг аукциона')
         else:
@@ -544,13 +622,37 @@ async def handle_request(message):
         auction = get_auction(auction_id)
         if is_positive_number(message.text):
             if int(message.text) >= get_item(auction.item_id).price + auction.bid_step:
-                save_auto_bid(create_auto_bid(int(message.text), message.chat.id, auction_id))
-                states[message.chat.id] = 'on_main_menu'
+                if int(message.text) % auction.bid_step == 0:
+                    save_auto_bid(create_auto_bid(int(message.text), message.chat.id, auction_id))
+                    states[message.chat.id] = 'on_main_menu'
+                    await clear_chat(message.chat.id)
+                    await send_and_save(message.chat.id, f'Автоставка успешно добавлена, сумма - {message.text}')
+                    await send_and_save(message.chat.id, main_menu_message)
+                else:
+                    await send_and_save(message.chat.id, 'Сумма автоставки должна быть кратна шагу аукциона')
             else:
                 await send_and_save(message.chat.id, 'Сумма ставки должна превышать цену как минимум на шаг аукциона')
         else:
             await send_and_save(message.chat.id, 'Сумма ставки должна быть положительным числом')
-
+    elif states[message.chat.id].find('changing_auto_bid_') != -1:
+        auto_bid_id = states[message.chat.id].split('_')[3]
+        auto_bid = get_auto_bid_by_id(auto_bid_id)
+        auction_id = auto_bid.auction_id
+        auction = get_auction(auction_id)
+        if is_positive_number(message.text):
+            if int(message.text) >= get_item(auction.item_id).price + auction.bid_step:
+                if int(message.text) % auction.bid_step == 0:
+                    change_auto_bid(auto_bid_id, int(message.text))
+                    states[message.chat.id] = 'on_main_menu'
+                    await clear_chat(message.chat.id)
+                    await send_and_save(message.chat.id, f'Автоставка успешно изменена, сумма - {message.text}')
+                    await send_and_save(message.chat.id, main_menu_message)
+                else:
+                    await send_and_save(message.chat.id, 'Сумма автоставки должна быть кратна шагу аукциона')
+            else:
+                await send_and_save(message.chat.id, 'Сумма ставки должна превышать цену как минимум на шаг аукциона')
+        else:
+            await send_and_save(message.chat.id, 'Сумма ставки должна быть положительным числом')
     else:
         await bot.reply_to(message, states[message.chat.id])
 

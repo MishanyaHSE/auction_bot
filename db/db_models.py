@@ -112,12 +112,6 @@ class Review(Base):
     owner = relationship("User", foreign_keys=[owner_id])
 
 
-class Location(Base):
-    __tablename__ = 'locations'
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-
-
 class Buyer(Base):
     __tablename__ = 'buyers'
     id = Column(Integer, primary_key=True)
@@ -365,3 +359,43 @@ def get_valid_auto_bids(auction_id):
             new_bid = Bid(amount=auto_bids[-1].amount + auction.bid_step, time=auto_bids[-1].bid_time, auction_id=auction_id, bidder_id=auto_bids[-1].bidder_id)
             save_bid(new_bid)
             db.commit()
+
+
+# def get_valid_auto_bids(auction_id):
+#     with connection.session as db:
+#         current_max_bid = get_max_bid(auction_id)
+#         auction = get_auction(auction_id)
+#         auto_bids = db.query(AutoBid).filter(AutoBid.auction_id == auction_id).order_by(AutoBid.amount, AutoBid.bid_time).all()
+#         if all(auto_bids):
+#             if len(auto_bids) == 1:
+#                 if auto_bids[0].amount >= current_max_bid + auction.bid_step:
+#                     save_bid(Bid(amount=current_max_bid + auction.bid_step, time=auto_bids[0].bid_time, auction_id=auction_id, bidder_id=auto_bids[0].bidder_id))
+#                 else:
+
+
+
+
+def get_auto_bid(user_id, auction_id):
+    with connection.session as db:
+        auto_bid = db.query(AutoBid).filter(AutoBid.auction_id == auction_id).filter(AutoBid.bidder_id == user_id).first()
+        return auto_bid
+
+
+def get_auto_bid_by_id(auto_bid_id):
+    with connection.session as db:
+        auto_bid = db.get(AutoBid, auto_bid_id)
+        return auto_bid
+
+
+def change_auto_bid(auto_bid_id, amount):
+    with connection.session as db:
+        auto_bid = db.get(AutoBid, auto_bid_id)
+        auto_bid.amount = amount
+        db.commit()
+
+
+def delete_auto_bid(auto_bid_id):
+    with connection.session as db:
+        auction_id = db.get(AutoBid, auto_bid_id)
+        db.delete(auction_id)
+        db.commit()
