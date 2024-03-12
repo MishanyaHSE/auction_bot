@@ -6,7 +6,7 @@ from sqlalchemy.orm import relationship, DeclarativeBase, Session
 
 Base = declarative_base()
 
-engine = create_engine('postgresql://user:pas123@localhost/auction', echo=True)
+engine = create_engine('postgresql://user:pas123@localhost/auction')
 
 
 class Base(DeclarativeBase):
@@ -22,6 +22,7 @@ class User(Base):
     company_website = Column(String)
     rating = Column(Float)
     status = Column(String)
+    nick = Column(String)
 
     items = relationship("Item", back_populates="owner")
 
@@ -306,7 +307,10 @@ def update_auction_time(auction_id, added_minutes):
     with connection.session as db:
         auction = db.get(Auction, auction_id)
         dt = auction.duration
-        auction.duration = auction.duration.replace(minute=dt.minute + added_minutes)
+        if dt.minute + added_minutes < 60:
+            auction.duration = auction.duration.replace(minute=dt.minute + added_minutes)
+        else:
+            auction.duration = auction.duration.replace(hour=dt.hour + 1, minute=(dt.minute + added_minutes) % 60)
         db.commit()
 
 
@@ -315,12 +319,15 @@ def get_auction_to_participate(user_id):
         auctions = db.query(Auction).filter(or_(Auction.state == 'active', Auction.state == 'going')).all()
         user_auctions_list = db.query(Buyer).filter(Buyer.buyer_id == user_id).all()
         already_participate = []
-        for au in user_auctions_list:
-            already_participate.append(au.auction_id)
         auctions_to_participate = []
-        for au in auctions:
-            if au.id not in already_participate:
-                auctions_to_participate.append(au.id)
+        if all(user_auctions_list):
+            for au in user_auctions_list:
+                already_participate.append(au.auction_id)
+
+            if all(auctions):
+                for au in auctions:
+                    if au.id not in already_participate:
+                        auctions_to_participate.append(au.id)
         return auctions_to_participate
 
 
@@ -365,12 +372,16 @@ def get_valid_auto_bids(auction_id):
 #     with connection.session as db:
 #         current_max_bid = get_max_bid(auction_id)
 #         auction = get_auction(auction_id)
-#         auto_bids = db.query(AutoBid).filter(AutoBid.auction_id == auction_id).order_by(AutoBid.amount, AutoBid.bid_time).all()
+#         auto_bids = db.query(AutoBid).filter(AutoBid.auction_id == auction_id).order_by(AutoBid.amount, AutoBid.bid_time.desc()).all()
 #         if all(auto_bids):
 #             if len(auto_bids) == 1:
 #                 if auto_bids[0].amount >= current_max_bid + auction.bid_step:
 #                     save_bid(Bid(amount=current_max_bid + auction.bid_step, time=auto_bids[0].bid_time, auction_id=auction_id, bidder_id=auto_bids[0].bidder_id))
 #                 else:
+#                     if auto_bids[-2] >= current_max_bid + auction.bid_step:
+#                         if auto_bids[-1] > auto_bids[-2]:
+#                             save_bid(Bid(amount=current_max_bid + auction.bid_step, time=auto_bids[0].bid_time,
+#                                          auction_id=auction_id, bidder_id=auto_bids[0].bidder_id))
 
 
 
@@ -399,3 +410,9 @@ def delete_auto_bid(auto_bid_id):
         auction_id = db.get(AutoBid, auto_bid_id)
         db.delete(auction_id)
         db.commit()
+
+
+def get_all_not_finished_auctions():
+    with connection.session as db:
+        auctions = db.query(Auction).filter(or_(Auction.state == 'active', Auction.state == 'going')).all()
+        return auctions

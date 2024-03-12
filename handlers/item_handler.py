@@ -87,11 +87,17 @@ class NewItem:
         return ''
 
     def auction_info(self):
+        box = 'Нет'
+        docs = 'Нет'
+        if self.document_available:
+            docs = 'Да'
+        if self.box_available:
+            box = 'Да'
         return f'Бренд: {self.brand}\n' \
                f'Референс: {self.reference}\n' \
                f'Цена: {self.price}\n' \
-               f'Коробка: {self.box_available}\n' \
-               f'Документы: {self.document_available}\n' \
+               f'Коробка: {box}\n' \
+               f'Документы: {docs}\n' \
                f'Коментарий: {self.comments}\n'
 
     def append_photo(self, file_info):

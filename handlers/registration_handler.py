@@ -16,6 +16,7 @@ class RegistrationHandler:
             'check': 'Давайте проверим, что я все верно записал:',
             'end': ''
         }
+        self.nick = None
         self.currentState = 'getName'
 
     def do_registration(self, text):

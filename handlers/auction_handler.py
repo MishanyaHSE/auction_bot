@@ -16,8 +16,8 @@ class AuctionHandler:
         self.owner_id = None
         self.states = {
             'getBidStep': 'Укажите минимальный шаг ставки:',
-            'getStartDate': 'Укажите дату начала аукциона:',
-            'getStartTime': 'Укажите время начала аукциона',
+            'getStartDate': 'Укажите дату начала аукциона(в формате ДД.ММ):',
+            'getStartTime': 'Укажите время начала аукциона(в формате ЧЧ:ММ):',
             'check': 'Давайте проверим, что я все верно записал:',
             'end': ''
         }
@@ -35,18 +35,35 @@ class AuctionHandler:
                 return "Необходимо указать целое положительное число\n" + self.states['getBidStep']
             return self.states['getStartDate']
         elif self.currentState == 'getStartTime':
-            self.start_date = date(2024, int(text.split('.')[1]), int(text.split('.')[0]))
-            self.currentState = 'check'
-            return self.states['getStartTime']
+            if len(text) == 5 and text[2] == '.':
+                self.start_date = date(2024, int(text.split('.')[1]), int(text.split('.')[0]))
+                self.currentState = 'check'
+                return self.states['getStartTime']
+            else:
+                return 'Дата должна быть указана в формате ДД.ММ(например, 12.03)'
         elif self.currentState == 'check':
-            # self.start_time = time(int(text.split(':')[0]), int(text.split(':')[1]))
-            self.start_time = time(int(text.split(':')[0]), int(text.split(':')[1]))
-            end_time = time(int(text.split(':')[0]), int(text.split(':')[1]) + 5)
-            self.end_date_time = datetime.combine(self.start_date, end_time)
-            self.start_date_time = datetime.combine(self.start_date, self.start_time)
-            self.currentState = 'end'
-            auction_inf = self.auction_info() + 'Все верно?'
-            return auction_inf
+            if len(text) == 5 and text[2] == ':':
+                hours = text.split(':')[0]
+                if hours[0] == 0:
+                    hours = hours[1]
+                minutes = text.split(':')[1]
+                if minutes[0] == 0:
+                    minutes = minutes[1]
+                hours = int(hours)
+                minutes = int(minutes)
+                self.start_time = time(hours, minutes)
+                # if minutes + 10 <= 59:
+                #     end_time = time(hours, minutes + 10)
+                # else:
+                #     end_time = time(hours + 1, (minutes + 10) % 60)
+                end_time = time(hours, minutes + 3)
+                self.end_date_time = datetime.combine(self.start_date, end_time)
+                self.start_date_time = datetime.combine(self.start_date, self.start_time)
+                self.currentState = 'end'
+                auction_inf = self.auction_info() + 'Все верно?'
+                return auction_inf
+            else:
+                return 'Время должно быть указано в формате ЧЧ:ММ(например, 15:10 или 06:03)'
         elif self.currentState == 'end' and text == 'Да':
             self.currentState = 'anotherOne'
             return 'Отлично! Аукцион создан и отправлен на модерацию'
