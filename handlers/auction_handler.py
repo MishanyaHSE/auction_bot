@@ -1,7 +1,9 @@
-from datetime import date, time, datetime
+from datetime import date, time, datetime, timedelta
 
 from utility.utility import is_positive_number, all_brands, other_brands
 
+
+AUCTION_LENGTH_MINUTES = 3
 
 class AuctionHandler:
     def __init__(self):
@@ -52,11 +54,15 @@ class AuctionHandler:
                 hours = int(hours)
                 minutes = int(minutes)
                 self.start_time = time(hours, minutes)
-                if minutes + 2 <= 59:
-                    end_time = time(hours, minutes + 2)
+                if minutes + AUCTION_LENGTH_MINUTES <= 59:
+                    end_time = time(hours, minutes + AUCTION_LENGTH_MINUTES)
                 else:
-                    end_time = time(hours + 1, (minutes + 2) % 60)
-                self.end_date_time = datetime.combine(self.start_date, end_time)
+                    if hours + 1 <= 23:
+                        end_time = time(hours + 1, (minutes + AUCTION_LENGTH_MINUTES) % 60)
+                    else:
+                        end_time = time(0, (minutes + AUCTION_LENGTH_MINUTES) % 60)
+
+                self.end_date_time = datetime.combine(self.start_date, end_time) + timedelta(days=1 if not end_time.hour else 0)
                 self.start_date_time = datetime.combine(self.start_date, self.start_time)
                 self.currentState = 'end'
                 auction_inf = self.auction_info() + 'Все верно?'
