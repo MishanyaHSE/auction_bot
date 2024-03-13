@@ -60,6 +60,7 @@ async def start_auction(auction_id):
     print(f'Auction {auction_id} has been started!')
     print(get_auction(auction_id).state)
     schedule.clear('start_auction_' + str(auction_id))
+    auction_messages[auction_id] = []
     await create_end_auction_task(auction_id)
     await create_autobids_task(auction_id)
 
@@ -74,6 +75,7 @@ async def unblock_users():
 async def use_auto_bids(auction_id):
     result, previous_winner = get_valid_auto_bids(auction_id)
     auction = get_auction(auction_id)
+    print(result)
     if result != 0:
         for m in auction_messages[auction_id]:
             try:
@@ -87,7 +89,7 @@ async def use_auto_bids(auction_id):
                                             reply_markup=create_back_button(), parse_mode="Markdown")
             except:
                 print("MESSAGE WAS NOT FOUND")
-                if m.chat.id == previous_winner:
+                if m.chat.id == previous_winner and previous_winner != auction.winner_id:
                     markup = types.InlineKeyboardMarkup()
                     markup.add(types.InlineKeyboardButton('Перейти',
                                                           callback_data='open_auction_' + str(auction.id)))
@@ -100,7 +102,10 @@ async def use_auto_bids(auction_id):
                     await send_and_save_with_markup(previous_winner,
                                                     "ВАШУ СТАВКУ ПЕРЕБИЛИ\n" + create_auction_message(
                                                         auction), markup)
+                    await send_message_to_all_autobidders(auction_id, auction)
     schedule.clear('auto_bids_' + str(auction_id))
+    if get_max_bid(auction_id).amount < get_biggest_auto_bid(auction_id):
+        schedule.every(10).seconds.do(use_auto_bids, auction_id).tag('auto_bids_' + str(auction_id))
 
 
 async def send_message_to_all_autobidders(auction_id, auction):
@@ -136,7 +141,6 @@ def start_schedule_for_all_auctions():
         elif auction.state == 'active':
             time = str(auction.start_date.time())[:-3]
             schedule.every().day.at(time).do(start_auction, auction.id).tag('start_auction_' + str(auction.id))
-
 
 
 start_schedule_for_all_auctions()
@@ -652,7 +656,9 @@ async def get_item_photos(message):
         if items[message.chat.id].currentState == 'getDocument_available' or items[
             message.chat.id].currentState == 'getBox_available':
             if len(items[message.chat.id].photos) == 0:
-                await send_and_save(message.chat.id, items[message.chat.id].create_item(''))
+                current_bot_message = items[message.chat.id].create_item('')
+                if current_bot_message != '':
+                    await send_and_save(message.chat.id, current_bot_message)
             f_id = message.photo[-1].file_id
             file_info = await bot.get_file(f_id)
             items[message.chat.id].append_photo(file_info)
@@ -664,7 +670,7 @@ async def get_item_photos(message):
 
 
 # Обработка всех текстовых сообщений, которые не являются командами
-@bot.message_handler(func=lambda message: True)
+@bot.message_handler(content_types=['text'])
 async def handle_request(message):
     messages_to_delete[message.chat.id].append(message.id)
     if is_blocked(message.chat.id):
@@ -726,13 +732,15 @@ async def handle_request(message):
     elif states[message.chat.id] == 'on_adding_items':
         if items[message.chat.id].currentState != 'getBox_available':
             current_bot_message = items[message.chat.id].create_item(message.text)
-            if current_bot_message.find('коробка') != -1 or current_bot_message.find(
-                    'Документы') != -1 or current_bot_message.find('Необходимо') != -1 or \
-                    current_bot_message.find('Желаете добавить еще один') != -1:
+            if current_bot_message.find('Имеется ли коробка от часов:') != -1 or current_bot_message.find(
+                    'Документы от часов') != -1 or current_bot_message.find('Необходимо') != -1 or \
+                    current_bot_message.find('Желаете добавить еще один') != -1 or current_bot_message.find('Все верно?') != -1:
                 if current_bot_message.find('Желаете добавить еще один') != -1 and len(items[message.chat.id].photos) < 3:
                     current_bot_message = 'Не удалось добавить предмет. Вы прикрепили меньше 3-х фотографий. Желаете заново добавить предмет?'
                     states[message.chat.id] = 'can_end_item_survey'
                 await send_and_save_with_markup(message.chat.id, current_bot_message, create_yes_or_no_button())
+            elif current_bot_message.find('Укажи бренд часов, которые хотите выставить на аукцион') != -1:
+                await send_and_save_with_markup(message.chat.id, current_bot_message, create_brand_buttons())
             else:
                 await send_and_save_with_markup(message.chat.id, current_bot_message,
                                                 telebot.types.ReplyKeyboardRemove())

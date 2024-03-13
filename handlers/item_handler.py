@@ -57,6 +57,8 @@ class NewItem:
                 self.box_available = True
             elif text == 'Нет':
                 self.box_available = False
+            elif text == '':
+                return ''
             else:
                 return 'Необходимо выбрать Да/Нет'
             self.currentState = 'getComments'
@@ -66,6 +68,8 @@ class NewItem:
                 self.document_available = True
             elif text == 'Нет':
                 self.document_available = False
+            elif text == '':
+                pass
             else:
                 return 'Необходимо выбрать Да/Нет'
             self.currentState = 'check'
@@ -80,6 +84,7 @@ class NewItem:
             return 'Отлично! Предмет добавлен. Желаете добавить еще один?'
         elif self.currentState == 'end' and text == 'Нет':
             self.currentState = 'getReference'
+            self.photos.clear()
             return self.states['getBrand']
         elif self.currentState == 'anotherOne' and text == 'Да':
             self.currentState = 'getReference'
