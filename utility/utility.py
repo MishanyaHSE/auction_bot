@@ -51,8 +51,8 @@ def create_interest_message(interest):
 def create_auction_message(auction):
     item = get_item(auction.item_id)
     auction_info = f'Минимальный шаг: {auction.bid_step}\n' \
-                   f'Начало: {auction.start_date}\n' \
-                   f'Конец: {auction.duration}\n'
+                   f'Начало: {auction.start_date}\n МСК' \
+                   f'Конец: {auction.duration}\n МСК'
     return f'Предмет:\n' + create_item_text(item) + '\n' + f'Аукцион:\n' + auction_info
 
 
@@ -68,6 +68,7 @@ def create_item_text(item):
                f'Цена: {item.price}\n' \
                f'Коробка: ' + box + '\n'\
                f'Документы: ' + docs + '\n'\
+               f'Город: {item.city}\n'\
                f'Коментарий: {item.comments}\n'
 
 

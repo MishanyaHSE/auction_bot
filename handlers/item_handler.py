@@ -63,9 +63,9 @@ class NewItem:
                 return ''
             else:
                 return 'Необходимо выбрать Да/Нет'
-            self.currentState = 'getCity'
+            self.currentState = 'getLocation'
             return self.states['getDocument_available']
-        elif self.currentState == 'getCity':
+        elif self.currentState == 'getLocation':
             if text == 'Да':
                 self.document_available = True
             elif text == 'Нет':
@@ -75,7 +75,7 @@ class NewItem:
             else:
                 return 'Необходимо выбрать Да/Нет'
             self.currentState = 'getComments'
-            return self.states['getCity']
+            return self.states['getLocation']
         elif self.currentState == 'getComments':
             if len(text) > 30:
                 return 'Вы ввели слишком длинное название. Введите название города, из которого отправите часы, комментарии можно указать позже'

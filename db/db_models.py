@@ -45,6 +45,7 @@ class Item(Base):
     price = Column(Float)
     box_available = Column(Boolean)
     document_available = Column(Boolean)
+    city = Column(String)
     comments = Column(String)
     owner_id = Column(Integer, ForeignKey('users.id'))
 

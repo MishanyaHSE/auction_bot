@@ -10,7 +10,7 @@ import asyncio
 from utility.utility import *
 from db.db_models import *
 
-bot = AsyncTeleBot("6885951107:AAH6BJaLwZmO5L4Scf6F3IEt_Wdvdbm3nDk")
+bot = AsyncTeleBot("7072021263:AAGyzwxqIKjDT32GKRQ0jeBtXtNeMsbbp44")
 
 states = {}
 reg_handlers = {}
@@ -18,7 +18,7 @@ interests = {}
 items = {}
 messages_to_delete = {}
 auction_handler = {}
-moderator_id = 296301570
+moderator_id = 436911675
 going_auctions = {}
 auction_messages = {}
 MINUTES_TO_ENLARGE = 2
@@ -463,16 +463,14 @@ def main_menu_message(chat_id):
 async def brand_buttons_action(call):
     if call.message:
         if (call.data in all_brands or call.data in other_brands) and states[call.message.chat.id] == 'on_interest_survey':
-            print('here1')
             await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id,
                                         text='Вы выбрали: ' + call.data)
-            await send_and_save(call.message.chat.id, interests[call.message.chat.id].interest_survey(call.data))
-            print('here2')
+            await send_and_save_with_markup(call.message.chat.id, interests[call.message.chat.id].interest_survey(call.data), create_back_to_main_menu_button())
         elif (call.data in all_brands or call.data in other_brands) and states[
             call.message.chat.id] == 'on_adding_items':
             await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id,
                                         text='Вы выбрали: ' + call.data)
-            await send_and_save(call.message.chat.id, items[call.message.chat.id].create_item(call.data))
+            await send_and_save_with_markup(call.message.chat.id, items[call.message.chat.id].create_item(call.data), create_back_to_main_menu_button())
         elif call.data.find('interest') != -1:
             await bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.id)
             delete_interest(call.data.split('_')[1])
@@ -640,7 +638,7 @@ def create_interest(user_id):
 def create_item(user_id):
     hl = items[user_id]
     return Item(brand=hl.brand, reference=hl.reference, price=hl.price, box_available=hl.box_available,
-                document_available=hl.document_available, comments=hl.comments, owner_id=user_id)
+                document_available=hl.document_available, comments=hl.comments, owner_id=user_id, city=hl.city)
 
 
 def create_auction(user_id):
@@ -722,7 +720,7 @@ async def handle_request(message):
         elif current_bot_message.find('верно') != -1 or current_bot_message.find('Фильтр объявлений добавлен') != -1:
             await send_and_save_with_markup(message.chat.id, current_bot_message, create_yes_or_no_button())
         else:
-            await send_and_save_with_markup(message.chat.id, current_bot_message, telebot.types.ReplyKeyboardRemove())
+            await send_and_save_with_markup(message.chat.id, current_bot_message, create_back_to_main_menu_button())
         if current_bot_message == 'Отлично! Фильтр объявлений добавлен. Желаете создать еще один?':
             save_interest(create_interest(message.chat.id))
             states[message.chat.id] = 'can_end_interest_survey'
@@ -750,7 +748,7 @@ async def handle_request(message):
                 await send_and_save_with_markup(message.chat.id, current_bot_message, create_brand_buttons())
             else:
                 await send_and_save_with_markup(message.chat.id, current_bot_message,
-                                                telebot.types.ReplyKeyboardRemove())
+                                                create_back_to_main_menu_button())
             if current_bot_message == 'Отлично! Предмет добавлен. Желаете добавить еще один?':
                 new_item_id = save_item(create_item(message.chat.id))
                 names = await save_photos_to_folder(items[message.chat.id].photos, new_item_id)
@@ -758,7 +756,7 @@ async def handle_request(message):
                     save_photo(create_photo(name, new_item_id))
                 states[message.chat.id] = 'can_end_item_survey'
         else:
-            await send_and_save(message.chat.id, 'Необходимо прикрепить хотя бы одно фото')
+            await send_and_save(message.chat.id, 'Необходимо прикрепить хотя бы три фото')
     elif states[message.chat.id] == 'can_end_item_survey' and (message.text == 'Да' or message.text == 'да'):
         await clear_chat(message.chat.id)
         items[message.chat.id] = NewItem()
