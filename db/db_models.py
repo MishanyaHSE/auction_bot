@@ -194,6 +194,12 @@ def get_items(user_id):
         return items
 
 
+def get_auction_for_item(item_id):
+    with connection.session as db:
+        auction = db.query(Auction).filter(Auction.item_id == item_id).first()
+        return auction
+
+
 def delete_item(item_id):
     with connection.session as db:
         item = db.query(Item).filter(Item.id == item_id).first()

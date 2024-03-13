@@ -10,7 +10,7 @@ import asyncio
 from utility.utility import *
 from db.db_models import *
 
-bot = AsyncTeleBot("TOKEN")
+bot = AsyncTeleBot("7072021263:AAGyzwxqIKjDT32GKRQ0jeBtXtNeMsbbp44")
 
 states = {}
 reg_handlers = {}
@@ -155,8 +155,8 @@ async def clear_chat(chat_id):
     messages_to_delete[chat_id].clear()
 
 
-async def send_and_save(m_id, text):
-    res = await bot.send_message(m_id, text)
+async def send_and_save(m_id, text, parse_mode=None):
+    res = await bot.send_message(m_id, text, parse_mode=parse_mode)
     if messages_to_delete[m_id] is None:
         messages_to_delete[m_id] = []
     messages_to_delete[m_id].append(res.id)
@@ -386,7 +386,16 @@ async def open_items(message):
                     messages_to_delete[message.chat.id].append(msg.id)
                 markup.add(types.InlineKeyboardButton('Удалить', callback_data='item_' + str(item.id) + photos_ids))
                 if is_item_on_auction(item.id):
-                    await send_and_save(message.chat.id, create_item_text(item))
+                    auction = get_auction_for_item(item.id)
+                    if auction.state == 'active':
+                        text = f'\n\n*Предмет выставлен на аукционе*\nНачало: {auction.start_date}'
+                    elif auction.state == 'going':
+                        text = f'\n\n*Предмет в данный момент разыгрывается на аукционе*\nТекущая ставка: {get_max_bid(auction.id).amount}\nАукцион закончится: {auction.duration}'
+                    elif auction.state == 'finished':
+                        text = f'\n\n*Вы продали предмет на аукционе*\nЦена: {get_max_bid(auction.id).amount}\nПокупатель: @{get_user_info(auction.winner_id).nick}'
+                    else:
+                        text = f'\n\n*Предмет на аукционе и ожидает модерации*'
+                    await send_and_save(message.chat.id, create_item_text(item) + text, 'Markdown')
                 else:
                     await send_and_save_with_markup(message.chat.id, create_item_text(item), markup)
         else:
