@@ -602,6 +602,12 @@ def create_skip_button():
     return markup
 
 
+def create_back_to_main_menu_button():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    markup.add(types.KeyboardButton('В главное меню'))
+    return markup
+
+
 async def save_photos_to_folder(info_list, item_id):
     counter = 0
     item_photos = []
@@ -678,12 +684,11 @@ async def handle_request(message):
     if is_blocked(message.chat.id):
         await send_and_save(message.chat.id, 'К сожалению, вы были заблокированы. Обратитесь к модератору.')
         return
-    if message.text == 'Назад':
+    if message.text == 'Назад' or message.text == 'В главное меню':
         states[message.chat.id] = 'on_main_menu'
         await clear_chat(message.chat.id)
         await send_and_save(message.chat.id, main_menu_message(message.chat.id))
-    if states[
-        message.chat.id] == 'notRegistered':  # Данный статус только в том случае, если человек не завершил регистрацию и зашел в бота впервые
+    if states[message.chat.id] == 'notRegistered':
         current_bot_message = reg_handlers[message.chat.id].do_registration(
             message.text)  # По айди чата вызываем функцию регистрации
         if current_bot_message.find('верно') != -1:

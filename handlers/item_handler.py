@@ -11,6 +11,7 @@ class NewItem:
         self.box_available = None
         self.document_available = None
         self.comments = None
+        self.city = None
         self.states = {
             'getBrand': 'Укажи бренд часов, которые хотите выставить на аукцион:',
             'getReference': 'Референс часов:',
@@ -24,6 +25,7 @@ class NewItem:
                         f'-документы(при наличии)\n',
             'getBox_available': 'Имеется ли коробка от часов:',
             'getDocument_available': 'Документы от часов:',
+            'getLocation': 'Укажите город, из которого будет произвдена отправка предмета:',
             'getComments': 'Можете написать коментарий к часам, если не хотите, напишите "нет":',
             'check': 'Давайте проверим, что я все верно записал:',
             'end': ''
@@ -61,9 +63,9 @@ class NewItem:
                 return ''
             else:
                 return 'Необходимо выбрать Да/Нет'
-            self.currentState = 'getComments'
+            self.currentState = 'getCity'
             return self.states['getDocument_available']
-        elif self.currentState == 'getComments':
+        elif self.currentState == 'getCity':
             if text == 'Да':
                 self.document_available = True
             elif text == 'Нет':
@@ -72,8 +74,15 @@ class NewItem:
                 pass
             else:
                 return 'Необходимо выбрать Да/Нет'
-            self.currentState = 'check'
-            return self.states['getComments']
+            self.currentState = 'getComments'
+            return self.states['getCity']
+        elif self.currentState == 'getComments':
+            if len(text) > 30:
+                return 'Вы ввели слишком длинное название. Введите название города, из которого отправите часы, комментарии можно указать позже'
+            else:
+                self.currentState = 'check'
+                self.city = text
+                return self.states['getComments']
         elif self.currentState == 'check':
             self.comments = text
             auction_inf = self.states['check'] + '\n' + self.auction_info() + 'Все верно?'
@@ -103,6 +112,7 @@ class NewItem:
                f'Цена: {self.price}\n' \
                f'Коробка: {box}\n' \
                f'Документы: {docs}\n' \
+               f'Город: {self.city}\n' \
                f'Коментарий: {self.comments}\n'
 
     def append_photo(self, file_info):
