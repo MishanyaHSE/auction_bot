@@ -486,3 +486,18 @@ def get_biggest_auto_bid(auction_id):
         else:
             return 0
 
+
+def delete_auction(auction_id):
+    with connection.session as db:
+        auction = get_auction(auction_id)
+        db.delete(auction)
+        db.commit()
+
+
+def delete_bids_for_auction(auction_id):
+    with connection.session as db:
+        bids = db.query(Bid).filter(Bid.auction_id == auction_id).all()
+        for bid in bids:
+            db.delete(bid)
+            db.commit()
+

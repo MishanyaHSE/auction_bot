@@ -51,8 +51,8 @@ def create_interest_message(interest):
 def create_auction_message(auction):
     item = get_item(auction.item_id)
     auction_info = f'Минимальный шаг: {auction.bid_step}\n' \
-                   f'Начало: {auction.start_date}\n МСК' \
-                   f'Конец: {auction.duration}\n МСК'
+                   f'Начало: {auction.start_date}МСК\n' \
+                   f'Конец: {auction.duration}МСК\n'
     return f'Предмет:\n' + create_item_text(item) + '\n' + f'Аукцион:\n' + auction_info
 
 

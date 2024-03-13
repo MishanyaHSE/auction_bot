@@ -59,8 +59,6 @@ async def create_autobids_task(auction_id):
 
 async def start_auction(auction_id):
     update_auction_state(auction_id, 'going')
-    print(f'Auction {auction_id} has been started!')
-    print(get_auction(auction_id).state)
     schedule.clear('start_auction_' + str(auction_id))
     auction_messages[auction_id] = []
     await create_end_auction_task(auction_id)
@@ -77,7 +75,6 @@ async def unblock_users():
 async def use_auto_bids(auction_id):
     result, previous_winner = get_valid_auto_bids(auction_id)
     auction = get_auction(auction_id)
-    print(result)
     if result != 0:
         for m in auction_messages[auction_id]:
             try:
@@ -387,7 +384,6 @@ async def open_items(message):
                 for msg in msges:
                     photos_ids += '_' + str(msg.id)
                     messages_to_delete[message.chat.id].append(msg.id)
-                print(photos_ids)
                 markup.add(types.InlineKeyboardButton('Удалить', callback_data='item_' + str(item.id) + photos_ids))
                 if is_item_on_auction(item.id):
                     await send_and_save(message.chat.id, create_item_text(item))
@@ -503,9 +499,7 @@ async def brand_buttons_action(call):
             await send_and_save(auction.owner_id,
                                 'Ваш аукцион был опубликован! Опубликованные аукционы можно посмотреть по команде /all_auctions')
             await send_notifications_about_auction(auction_id)
-            print(str(auction.start_date.time()))
             time = str(auction.start_date.time())[:-3]
-            print(time)
             if datetime.now() < auction.start_date:
                 schedule.every().day.at(time).do(start_auction, auction_id).tag(
                     'start_auction_' + str(auction_id))
@@ -514,8 +508,15 @@ async def brand_buttons_action(call):
         elif call.data.find('decline') != -1:
             auction_id = call.data.split('_')[1]
             auction = get_auction(auction_id)
-            update_auction_state(auction_id, 'declined')
             await clear_chat(call.message.chat.id)
+            msges = await bot.send_media_group(auction.owner_id, create_photos_for_item(get_item(auction.item_id)))
+            photos_ids = ''
+            for msg in msges:
+                photos_ids += '_' + str(msg.id)
+                messages_to_delete[auction.owner_id].append(msg.id)
+            await send_and_save(auction.owner_id, create_auction_message(auction))
+            delete_bids_for_auction(auction_id)
+            delete_auction(auction_id)
             await send_and_save(auction.owner_id,
                                 'Ваш аукцион был отклонен! Убедитесь, что в объявлении не было ошибки или свяжитесь с модератором')
         elif call.data.find('participate') != -1:
@@ -670,7 +671,6 @@ async def get_item_photos(message):
             items[message.chat.id].append_photo(file_info)
         else:
             await send_and_save(message.chat.id, 'Фото необходимо прикрепить на соответствующем этапе')
-            print(items[message.chat.id].currentState)
     else:
         await send_and_save(message.chat.id, 'Фото необходимо отправлять во время добавления предмета в профиль')
 
@@ -695,7 +695,6 @@ async def handle_request(message):
             await send_and_save_with_markup(message.chat.id, current_bot_message, telebot.types.ReplyKeyboardRemove())
         if current_bot_message == 'Отлично! Регистрация завершена':  # Если пользователь завершил регистрацию - меняем статус на сбор интересов
             reg_handlers[message.chat.id].nick = message.from_user.username
-            print(message.from_user.username)
             save_user(create_user(message.chat.id))
             await clear_chat(message.chat.id)
             states[message.chat.id] = 'on_interest_survey'
@@ -780,7 +779,6 @@ async def handle_request(message):
             states[message.chat.id] = 'on_main_menu'
             await send_and_save(message.chat.id, main_menu_message(message.chat.id))
             new_auction_id = save_auction(create_auction(message.chat.id))
-            auction = get_auction(new_auction_id)
             save_bid(
                 create_bid(get_item(auction_handler[message.chat.id].item_id).price, message.chat.id, new_auction_id))
             await send_auction_to_moderation(new_auction_id)
@@ -791,13 +789,10 @@ async def handle_request(message):
             current_bid = get_max_bid(auction_id).amount
             if int(message.text) - current_bid >= get_auction(auction_id).bid_step:
                 if int(message.text) % get_auction(auction_id).bid_step == 0:
-                    flag = False
                     save_bid(create_bid(int(message.text), message.chat.id, auction_id))
                     delta = get_auction(auction_id).duration - datetime.now()
                     if delta.total_seconds() // 60 <= MINUTES_TO_ENLARGE:
-                        print(delta.total_seconds() // 60)
                         update_auction_time(auction_id, ADDITIONAL_MINUTES)
-                        print(get_auction(auction_id).duration)
                         schedule.clear('end_auction_' + str(auction_id))
                         schedule.clear('auto_bids_' + str(auction_id))
                         await create_autobids_task(auction_id)
