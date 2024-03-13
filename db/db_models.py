@@ -351,34 +351,10 @@ def save_auto_bid(auto_bid):
         db.commit()
 
 
-# def get_valid_auto_bids(auction_id):
-#     with connection.session as db:
-#         current_max_bid = get_max_bid(auction_id)
-#         auction = get_auction(auction_id)
-#         auto_bids = db.query(AutoBid).filter(AutoBid.auction_id == auction_id).filter(AutoBid.amount > current_max_bid).order_by(AutoBid.amount).order_by(AutoBid.bid_time).desc.all()
-#         if current_max_bid + auction.bid_step <= auto_bids[-2].amount:
-#             if auto_bids[-1].amount >= auto_bids[-2].amount + auction.bid_step:
-#                 new_bid = Bid(amount=auto_bids[-2].amount + auction.bid_step, time=auto_bids[-1].bid_time, auction_id=auction_id, bidder_id=auto_bids[-1].bidder_id)
-#                 save_bid(new_bid)
-#                 db.commit()
-#             elif auto_bids[-1].amount == auto_bids[-2].amount:
-#                 new_bid = Bid(amount=auto_bids[-2].amount + auction.bid_step, time=auto_bids[-1].bid_time, auction_id=auction_id, bidder_id=auto_bids[-1].bidder_id)
-#                 save_bid(new_bid)
-#                 db.commit()
-#             elif auto_bids[-2].amount + auction.bid_step > auto_bids[-1]:
-#                 new_bid = Bid(amount=auto_bids[-2].amount + auction.bid_step, time=auto_bids[-2].bid_time, auction_id=auction_id, bidder_id=auto_bids[-2].bidder_id)
-#                 save_bid(new_bid)
-#                 db.commit()
-#         elif current_max_bid + auction.bid_step <= auto_bids[-1].amount:
-#             new_bid = Bid(amount=auto_bids[-1].amount + auction.bid_step, time=auto_bids[-1].bid_time, auction_id=auction_id, bidder_id=auto_bids[-1].bidder_id)
-#             save_bid(new_bid)
-#             db.commit()
-
-
 def get_valid_auto_bids(auction_id):
     with connection.session as db:
         current_max_bid = get_max_bid(auction_id)
-        auction = get_auction(auction_id)
+        auction = db.get(Auction, auction_id)
         auto_bids = db.query(AutoBid).filter(AutoBid.auction_id == auction_id).order_by(AutoBid.amount, AutoBid.bid_time.desc()).all()
         bid = 0
         previous_winner = 0
@@ -386,27 +362,44 @@ def get_valid_auto_bids(auction_id):
             if len(auto_bids) == 1:
                 if auto_bids[0].amount >= current_max_bid.amount + auction.bid_step:
                     if auto_bids[0].bidder_id != auction.winner_id:
-                        save_bid(Bid(amount=current_max_bid.amount + auction.bid_step, time=auto_bids[0].bid_time, auction_id=auction_id, bidder_id=auto_bids[0].bidder_id), commit=False)
+                        new_bid = Bid(amount=current_max_bid.amount + auction.bid_step, time=auto_bids[0].bid_time, auction_id=auction_id, bidder_id=auto_bids[0].bidder_id)
+                        db.add(new_bid)
                         previous_winner = auction.winner_id
                         b_id = auto_bids[0].bidder_id
-                        update_winner_id(auction_id, b_id, commit=False)
+                        auction.winner_id = b_id
                         bid = current_max_bid.amount + auction.bid_step
                         db.commit()
             elif len(auto_bids) > 1:
-                if auto_bids[-1] >= current_max_bid.amount + auction.bid_step:
-                    if auto_bids[-2] >= current_max_bid.amount + auction.bid_step:
-                        if auto_bids[-1] > auto_bids[-2]:
-                            save_bid(Bid(amount=auto_bids[-2] + auction.bid_step, time=auto_bids[-1].bid_time, auction_id=auction_id, bidder_id=auto_bids[-1].bidder_id), commit=False)
-                            previous_winner = auction.winner_id
-                            bid = auto_bids[-2] + auction.bid_step
-                            update_winner_id(auction_id, auto_bids[-1].bidder_id)
+                if auto_bids[-1].amount >= current_max_bid.amount + auction.bid_step:
+                    if auto_bids[-2].amount >= current_max_bid.amount + auction.bid_step:
+                        if auto_bids[-1].amount > auto_bids[-2].amount:
+                            if auto_bids[-1].bidder_id != auction.winner_id:
+                                new_bid = Bid(amount=auto_bids[-2].amount + auction.bid_step, time=auto_bids[-1].bid_time, auction_id=auction_id, bidder_id=auto_bids[-1].bidder_id)
+                                db.add(new_bid)
+                                previous_winner = auction.winner_id
+                                b_id = auto_bids[-1].bidder_id
+                                auction.winner_id = b_id
+                                bid = auto_bids[-2].amount + auction.bid_step
+                                db.commit()
+                            else:
+                                new_bid = Bid(amount=current_max_bid + auction.bid_step, time=auto_bids[-2].bid_time,
+                                              auction_id=auction_id, bidder_id=auto_bids[-2].bidder_id)
+                                db.add(new_bid)
+                                previous_winner = auction.winner_id
+                                b_id = auto_bids[-2].bidder_id
+                                auction.winner_id = b_id
+                                bid = current_max_bid + auction.bid_step
+                                db.commit()
                     else:
                         if auto_bids[-1].bidder_id != auction.winner_id:
-                            save_bid(Bid(amount=current_max_bid.amount + auction.bid_step, time=auto_bids[-1].bid_time,
-                                         auction_id=auction_id, bidder_id=auto_bids[-1].bidder_id), commit=False)
+                            new_bid = Bid(amount=current_max_bid.amount + auction.bid_step, time=auto_bids[-1].bid_time,
+                                         auction_id=auction_id, bidder_id=auto_bids[-1].bidder_id)
+                            db.add(new_bid)
                             previous_winner = auction.winner_id
+                            b_id = auto_bids[-1].bidder_id
+                            auction.winner_id = b_id
                             bid = current_max_bid.amount + auction.bid_step
-                            update_winner_id(auction_id, auto_bids[-1].bidder_id)
+                            db.commit()
         return bid, previous_winner
 
 

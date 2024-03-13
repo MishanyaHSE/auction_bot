@@ -18,10 +18,12 @@ interests = {}
 items = {}
 messages_to_delete = {}
 auction_handler = {}
-moderator_id = 436911675
+moderator_id = 296301570
 going_auctions = {}
 auction_messages = {}
-minutes_to_end = 0
+MINUTES_TO_ENLARGE = 2
+TIME_FOR_AUTO_BIDS = 10
+ADDITIONAL_MINUTES = 5
 
 
 async def end_auction(auction_id):
@@ -51,7 +53,7 @@ async def create_end_auction_task(auction_id):
 
 
 async def create_autobids_task(auction_id):
-    time = str((get_auction(auction_id).duration - timedelta(minutes=1)).time())[:-3]
+    time = str((get_auction(auction_id).duration - timedelta(minutes=TIME_FOR_AUTO_BIDS)).time())[:-3]
     schedule.every().day.at(time).do(use_auto_bids, auction_id).tag('auto_bids_' + str(auction_id))
 
 
@@ -268,7 +270,7 @@ async def open_coming_auctions(message):
         if len(auctions) > 0:
             for au in auctions:
                 markup = types.InlineKeyboardMarkup()
-                if get_auto_bid(message.chat.id, au.id) is None and (au.duration - datetime.now()).total_seconds() // 60 > minutes_to_end:
+                if get_auto_bid(message.chat.id, au.id) is None and (au.duration - datetime.now()).total_seconds() // 60 > TIME_FOR_AUTO_BIDS:
                     markup.add(types.InlineKeyboardButton('Автоставка', callback_data='create_auto_bid_' + str(au.id)))
                 if au.state == 'going':
                     markup.add(types.InlineKeyboardButton('Войти в аукцион', callback_data='open_auction_' + str(au.id)))
@@ -279,7 +281,7 @@ async def open_coming_auctions(message):
                     messages_to_delete[message.chat.id].append(msg.id)
                 await send_and_save_with_markup(message.chat.id, create_auction_message(au), markup)
                 is_changeable = True
-                if (au.duration - datetime.now()).total_seconds() // 60 <= minutes_to_end:
+                if (au.duration - datetime.now()).total_seconds() // 60 <= TIME_FOR_AUTO_BIDS:
                     is_changeable = False
                 await create_and_send_auto_bid_message(message.chat.id, au.id, is_changeable)
         else:
@@ -658,7 +660,7 @@ async def get_item_photos(message):
             if len(items[message.chat.id].photos) == 0:
                 current_bot_message = items[message.chat.id].create_item('')
                 if current_bot_message != '':
-                    await send_and_save(message.chat.id, current_bot_message)
+                    await send_and_save_with_markup(message.chat.id, current_bot_message, create_yes_or_no_button())
             f_id = message.photo[-1].file_id
             file_info = await bot.get_file(f_id)
             items[message.chat.id].append_photo(file_info)
@@ -789,9 +791,9 @@ async def handle_request(message):
                     flag = False
                     save_bid(create_bid(int(message.text), message.chat.id, auction_id))
                     delta = get_auction(auction_id).duration - datetime.now()
-                    if delta.total_seconds() // 60 <= minutes_to_end:
+                    if delta.total_seconds() // 60 <= MINUTES_TO_ENLARGE:
                         print(delta.total_seconds() // 60)
-                        update_auction_time(auction_id, 1)
+                        update_auction_time(auction_id, ADDITIONAL_MINUTES)
                         print(get_auction(auction_id).duration)
                         schedule.clear('end_auction_' + str(auction_id))
                         schedule.clear('auto_bids_' + str(auction_id))
