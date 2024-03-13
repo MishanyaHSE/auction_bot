@@ -10,7 +10,7 @@ import asyncio
 from utility.utility import *
 from db.db_models import *
 
-bot = AsyncTeleBot("7072021263:AAGyzwxqIKjDT32GKRQ0jeBtXtNeMsbbp44")
+bot = AsyncTeleBot("TOKEN")
 
 states = {}
 reg_handlers = {}
