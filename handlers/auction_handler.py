@@ -8,7 +8,7 @@ AUCTION_LENGTH_MINUTES = 30
 class AuctionHandler:
     def __init__(self):
         self.id = 0
-        self.bid_step = None
+        self.bid_step = 100
         self.start_date = None
         self.start_time = None
         self.start_date_time = None
@@ -23,18 +23,11 @@ class AuctionHandler:
             'check': 'Давайте проверим, что я все верно записал:',
             'end': ''
         }
-        self.currentState = 'getBidStep'
+        self.currentState = 'getStartDate'
 
     def create_auction(self, text):
-        if self.currentState == 'getBidStep':
-            self.currentState = 'getStartDate'
-            return self.states['getBidStep']
-        elif self.currentState == 'getStartDate':
-            if is_positive_number(text):
-                self.bid_step = int(text)
-                self.currentState = 'getStartTime'
-            else:
-                return "Необходимо указать целое положительное число\n" + self.states['getBidStep']
+        if self.currentState == 'getStartDate':
+            self.currentState = 'getStartTime'
             return self.states['getStartDate']
         elif self.currentState == 'getStartTime':
             if len(text) == 5 and text[2] == '.':
