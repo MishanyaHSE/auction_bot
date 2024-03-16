@@ -1,6 +1,16 @@
 version: '3.8'
 
 services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+      - ./photos:/app/photos
+    ports:
+      - "8000:8000"
+
   postgres:
     image: postgres:13
     container_name: postgres13

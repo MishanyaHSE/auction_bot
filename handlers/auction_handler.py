@@ -73,4 +73,4 @@ class AuctionHandler:
     def auction_info(self):
         return f'Минимальный шаг ставки: {self.bid_step}\n' \
                f'Дата и время начала: {self.start_date_time}\n' \
-               f'Дата и время окончания: {self.end_date_time}\n' \
+               f'Дата и время окончания: {self.end_date_time}\n'

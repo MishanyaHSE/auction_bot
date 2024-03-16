@@ -6,7 +6,7 @@ from sqlalchemy.orm import relationship, DeclarativeBase, Session
 
 Base = declarative_base()
 
-engine = create_engine('postgresql://user:pas123@localhost/auction')
+engine = create_engine('postgresql://user:pas123@postgres/auction')
 
 
 class Base(DeclarativeBase):

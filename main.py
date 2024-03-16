@@ -1,4 +1,5 @@
 import calendar
+import os
 from datetime import timedelta
 from handlers.registration_handler import RegistrationHandler
 from handlers.interests_handler import InterestsHandler
@@ -7,10 +8,12 @@ from handlers.auction_handler import AuctionHandler
 from telebot.async_telebot import AsyncTeleBot
 import aioschedule as schedule
 import asyncio
+from dotenv import load_dotenv
 from utility.utility import *
 from db.db_models import *
 
-bot = AsyncTeleBot("7072021263:AAGyzwxqIKjDT32GKRQ0jeBtXtNeMsbbp44")
+load_dotenv()
+bot = AsyncTeleBot(os.environ.get('BOT_TKN'))
 
 states = {}
 reg_handlers = {}
@@ -18,7 +21,7 @@ interests = {}
 items = {}
 messages_to_delete = {}
 auction_handler = {}
-moderator_id = 436911675
+moderator_id = int(os.environ.get('MODER_ID'))
 going_auctions = {}
 auction_messages = {}
 MINUTES_TO_ENLARGE = 2
@@ -428,7 +431,7 @@ async def open_items(message):
                     await send_and_save_with_markup(message.chat.id, create_item_text(item), markup)
         else:
             await send_and_save(message.chat.id,
-                                'У вас нет ни одного предмета в профиле. Чтобы добавить, используйте команду /add_item')
+                                'У вас нет ни одного предмета в профиле. Чтобы добавить, используйте команду /add_auction')
     else:
         await send_and_save(message.chat.id, 'Данную команду можно использовать только находясь в главном меню.')
 
@@ -655,7 +658,6 @@ async def save_photos_to_folder(info_list, item_id):
     return item_photos
 
 
-# вынести часть создания бренда (сообщение) в add_item, туда прикрепить кнопки, и вынести вывод последнего сообщения, на прикрепить удаление клавиатуры
 def create_user(user_id):
     hl = reg_handlers[user_id]
     return User(id=user_id, username=hl.name + ' ' + hl.surname, company_name=hl.company_name,
