@@ -15,9 +15,9 @@ other_brands = ['Alain Silberstein', 'Arnold Son', 'Blancpain', 'Bovet', 'Chopar
 main_menu_mess = f'Вы находитесь в главном меню, используйте команды для управления ботом:\n' \
                     f'/all_auctions - Просмотр всех аукционов\n' \
                     f'/coming_auctions - Просмотр аукционов, в которых вы участвуете\n' \
-                    f'/add_interest - Создание уведомления по бренду и цене\n' \
+                    f'/add_interest - Создание фильтра уведомлений об аукционах\n' \
                     f'/interests - Просмотр ваших уведомлений по бренду и цене\n' \
-                    f'/add_auction - Добавление часов\n' \
+                    f'/add_auction - Создание аукциона\n' \
                     f'/my_auctions - Просмотр ваших аукционов\n' \
                     f'/profile - Просмотр профиля'
 

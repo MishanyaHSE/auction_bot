@@ -19,7 +19,7 @@ class AuctionHandler:
         self.states = {
             'getBidStep': 'Укажите минимальный шаг ставки:',
             'getStartDate': 'Укажите дату начала аукциона(в формате ДД.ММ):',
-            'getStartTime': 'Укажите время начала аукциона(в формате ЧЧ:ММ):',
+            'getStartTime': 'Укажите время начала аукциона(в формате ЧЧ:ММ, время по МСК!):',
             'check': 'Давайте проверим, что я все верно записал:',
             'end': ''
         }
@@ -73,4 +73,4 @@ class AuctionHandler:
     def auction_info(self):
         return f'Минимальный шаг ставки: {self.bid_step}\n' \
                f'Дата и время начала: {self.start_date_time}\n' \
-               f'Дата и время окончания: {self.end_date_time}\n' \
+               f'Дата и время окончания: {self.end_date_time}\n'
