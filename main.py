@@ -226,13 +226,17 @@ async def send_welcome_message(message):
         states[message.chat.id] = 'notRegistered'
         reg_handlers[message.chat.id] = RegistrationHandler()
         await send_and_save(message.chat.id, 'Добро пожаловать! Давайте Вас зарегистрируем.')
+        await send_and_save(message.chat.id, str(datetime.now()))
         await send_and_save(message.chat.id, reg_handlers[message.chat.id].do_registration(''))
     else:
         if is_blocked(message.chat.id):
             await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}.')
             return
-        states[message.chat.id] = 'on_main_menu'
-        await send_and_save(message.chat.id, main_menu_message(message.chat.id))
+        if get_user_info(message.chat.id) is not None:
+            states[message.chat.id] = 'on_main_menu'
+            await send_and_save(message.chat.id, main_menu_message(message.chat.id))
+        else:
+            await send_and_save(message.chat.id, 'Пожалуйста, пройдите регистрацию')
         # вывод приветственного сообщения
 
 
