@@ -229,7 +229,7 @@ async def send_welcome_message(message):
         await send_and_save(message.chat.id, reg_handlers[message.chat.id].do_registration(''))
     else:
         if is_blocked(message.chat.id):
-            await send_and_save(message.chat.id, 'К сожалению, вы были заблокированы. Обратитесь к модератору.')
+            await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}.')
             return
         states[message.chat.id] = 'on_main_menu'
         await send_and_save(message.chat.id, main_menu_message(message.chat.id))
@@ -243,7 +243,7 @@ async def add_interest(message):
         return
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
         if is_blocked(message.chat.id):
-            await send_and_save(message.chat.id, 'К сожалению, вы были заблокированы. Обратитесь к модератору.')
+            await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}.')
             return
         await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id].append(message.id)
@@ -263,7 +263,7 @@ async def open_profile(message):
         return
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
         if is_blocked(message.chat.id):
-            await send_and_save(message.chat.id, 'К сожалению, вы были заблокированы. Обратитесь к модератору.')
+            await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}.')
             return
         await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id].append(message.id)
@@ -281,7 +281,7 @@ async def open_coming_auctions(message):
         return
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
         if is_blocked(message.chat.id):
-            await send_and_save(message.chat.id, 'К сожалению, вы были заблокированы. Обратитесь к модератору.')
+            await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}.')
             return
         await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id].append(message.id)
@@ -316,7 +316,7 @@ async def open_coming_auctions(message):
         return
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
         if is_blocked(message.chat.id):
-            await send_and_save(message.chat.id, 'К сожалению, вы были заблокированы. Обратитесь к модератору.')
+            await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}.')
             return
         await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id].append(message.id)
@@ -344,7 +344,7 @@ async def open_interests(message):
         return
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
         if is_blocked(message.chat.id):
-            await send_and_save(message.chat.id, 'К сожалению, вы были заблокированы. Обратитесь к модератору.')
+            await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}.')
             return
         await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id].append(message.id)
@@ -400,7 +400,7 @@ async def open_items(message):
         return
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
         if is_blocked(message.chat.id):
-            await send_and_save(message.chat.id, 'К сожалению, вы были заблокированы. Обратитесь к модератору.')
+            await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}.')
             return
         await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id].append(message.id)
@@ -443,7 +443,7 @@ async def add_item(message):
         return
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
         if is_blocked(message.chat.id):
-            await send_and_save(message.chat.id, 'К сожалению, вы были заблокированы. Обратитесь к модератору.')
+            await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}.')
             return
         await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id].append(message.id)
@@ -717,7 +717,7 @@ async def get_item_photos(message):
 async def handle_request(message):
     messages_to_delete[message.chat.id].append(message.id)
     if is_blocked(message.chat.id):
-        await send_and_save(message.chat.id, 'К сожалению, вы были заблокированы. Обратитесь к модератору.')
+        await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}.')
         return
     if message.text == 'Назад' or message.text == 'В главное меню':
         states[message.chat.id] = 'on_main_menu'
