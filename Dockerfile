@@ -6,6 +6,6 @@ COPY . .
 RUN mkdir -p photos
 ARG CLEAR_DB
 ENV CLEAR_DB=${CLEAR_DB}
-COPY run_bot.sh /run_bot.sh
-RUN chmod +x /run_bot.sh
-CMD ["/run_bot.sh"]
+COPY run_bot.sh /app/run_bot.sh
+RUN chmod +x /app/run_bot.sh
+CMD ["/app/run_bot.sh"]
