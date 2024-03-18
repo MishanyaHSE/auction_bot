@@ -507,3 +507,9 @@ def delete_bids_for_auction(auction_id):
             db.delete(bid)
             db.commit()
 
+
+def get_won_auctions(user_id):
+    with connection.session as db:
+        won_auctions = db.query(Auction).filter(Auction.winner_id == user_id)
+        return won_auctions
+
