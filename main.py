@@ -184,7 +184,7 @@ async def send_notifications_about_auction(auction_id):
     interests = get_interests_for_auction(auction_id)
     already_sent = []
     for interest in interests:
-        if interest.owner_id not in already_sent:
+        if interest.owner_id not in already_sent and interest.owner_id != get_auction(auction_id).owner_id:
             await send_and_save_with_markup(interest.owner_id,
                                             'Новый аукцион для вас!\n' + create_auction_message(
                                                 get_auction(auction_id)),
@@ -326,14 +326,19 @@ async def open_coming_auctions(message):
         messages_to_delete[message.chat.id].append(message.id)
         au_ids = get_auction_to_participate(message.chat.id)
         if len(au_ids) > 0:
+            auctions_available = False
             for id in au_ids:
                 auction = get_auction(id)
-                msges = await bot.send_media_group(message.chat.id, create_photos_for_item(get_item(auction.item_id)))
-                photos_ids = ''
-                for msg in msges:
-                    photos_ids += '_' + str(msg.id)
-                    messages_to_delete[message.chat.id].append(msg.id)
-                await send_and_save_with_markup(message.chat.id, create_auction_message(auction), create_button_to_part_in_auction(id))
+                if auction.owner_id != message.chat.id:
+                    auctions_available = True
+                    msges = await bot.send_media_group(message.chat.id, create_photos_for_item(get_item(auction.item_id)))
+                    photos_ids = ''
+                    for msg in msges:
+                        photos_ids += '_' + str(msg.id)
+                        messages_to_delete[message.chat.id].append(msg.id)
+                    await send_and_save_with_markup(message.chat.id, create_auction_message(auction), create_button_to_part_in_auction(id))
+            if not auctions_available:
+                await send_and_save(message.chat.id, 'На данный момент нет доступных аукционов для участия')
         else:
             await send_and_save(message.chat.id, 'На данный момент нет доступных аукционов для участия')
     else:
