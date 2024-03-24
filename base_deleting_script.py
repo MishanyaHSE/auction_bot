@@ -154,7 +154,7 @@ Auction.__table__.drop(engine)
 Item.__table__.drop(engine)
 Interest.__table__.drop(engine)
 Review.__table__.drop(engine)
-User.__table__.drop(engine)
+# User.__table__.drop(engine)
 
 
 def delete_files_in_folder(folder_path):
