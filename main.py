@@ -37,13 +37,13 @@ async def end_auction(auction_id):
     if get_max_bid(auction_id) == item.price:
         await send_and_save(item.owner_id, 'К сожалению, аукцион не состоялся, ни один пользователь не сделал ставку.')
         return
+    else:
+        await send_and_save(auction.owner_id,
+                            f'Ваш аукцион завершен, победная ставка {get_max_bid(auction_id).amount}. Для получения оплаты и отправки свяжитесь с @{get_user_info(auction.winner_id).nick}')
     for buyer in buyers:
         if buyer.buyer_id == auction.winner_id:
             await send_and_save(buyer.buyer_id,
                                 f'Вы выиграли аукцион! Ваша ставка {get_max_bid(auction_id).amount}. Для оплаты и получения свяжитесь с @{get_user_info(auction.owner_id).nick}')
-        elif buyer.buyer_id == auction.owner_id:
-            await send_and_save(buyer.buyer_id,
-                                f'Ваш аукцион завершен, победная ставка {get_max_bid(auction_id).amount}. Для получения оплаты и отправки свяжитесь с @{get_user_info(auction.winner_id).nick}')
         elif buyer.buyer_id != auction.winner_id and buyer.buyer_id != auction.owner_id:
             await send_and_save(buyer.buyer_id,
                                 f'Вам не удалось выиграть аукцион, победная ставка {get_max_bid(auction_id).amount}.')
