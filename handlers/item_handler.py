@@ -1,4 +1,4 @@
-from utility.utility import all_brands, other_brands
+from utility.utility import all_brands, other_brands, is_positive_number
 
 
 class NewItem:
@@ -48,9 +48,11 @@ class NewItem:
             self.currentState = 'getPhoto'
             return self.states['getPrice']
         elif self.currentState == 'getPhoto':
-            self.price = text
-            self.currentState = 'getBox_available'
-            return self.states['getPhoto']
+            if is_positive_number(text):
+                self.price = text
+                self.currentState = 'getBox_available'
+                return self.states['getPhoto']
+            return 'Цена должна быть целым положительным числом!\n' + self.states['getPrice']
         elif self.currentState == 'getBox_available':
             self.currentState = 'getDocument_available'
             return self.states['getBox_available']
