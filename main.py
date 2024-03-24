@@ -441,11 +441,11 @@ async def open_items(message):
                     # markup = types.InlineKeyboardMarkup(row_width=1)
                     # markup.add(
                     #     types.InlineKeyboardButton('Создать аукцион', callback_data='create_auction_' + str(item.id)))
-                    # msges = await bot.send_media_group(message.chat.id, create_photos_for_item(item))
-                    # photos_ids = ''
-                    # for msg in msges:
-                    #     photos_ids += '_' + str(msg.id)
-                    #     messages_to_delete[message.chat.id].append(msg.id)
+                    msges = await bot.send_media_group(message.chat.id, create_photos_for_item(item))
+                    photos_ids = ''
+                    for msg in msges:
+                        photos_ids += '_' + str(msg.id)
+                        messages_to_delete[message.chat.id].append(msg.id)
                     # markup.add(types.InlineKeyboardButton('Удалить', callback_data='item_' + str(item.id) + photos_ids))
                     if is_item_on_auction(item.id):
                         auction = get_auction_for_item(item.id)
