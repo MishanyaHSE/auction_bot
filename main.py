@@ -190,6 +190,15 @@ async def send_notifications_about_auction(auction_id):
                                                 get_auction(auction_id)),
                                             create_button_to_part_in_auction(auction_id))
             already_sent.append(interest.owner_id)
+    ids_without_interests = get_users_without_interests()
+    for id in ids_without_interests:
+        await send_and_save_with_markup(id,
+                                        'Новый аукцион был опубликован!\n' + create_auction_message(
+                                            get_auction(auction_id)),
+                                        create_button_to_part_in_auction(auction_id))
+        await send_and_save(id, 'Сейчас вам приходят уведомления о всех предстоящих аукционах. Вы можете настроить фильтры при'
+                            'помощи команд /add_interest и /interests')
+        already_sent.append(id)
 
 
 async def send_auction_to_moderation(auction_id):
@@ -226,7 +235,6 @@ async def send_welcome_message(message):
         states[message.chat.id] = 'notRegistered'
         reg_handlers[message.chat.id] = RegistrationHandler()
         await send_and_save(message.chat.id, 'Добро пожаловать! Давайте Вас зарегистрируем.')
-        await send_and_save(message.chat.id, str(datetime.now()))
         await send_and_save(message.chat.id, reg_handlers[message.chat.id].do_registration(''))
     else:
         if is_blocked(message.chat.id):

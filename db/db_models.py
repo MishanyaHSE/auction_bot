@@ -513,3 +513,19 @@ def get_won_auctions(user_id):
         won_auctions = db.query(Auction).filter(Auction.winner_id == user_id)
         return won_auctions
 
+
+def get_users_without_interests():
+    with connection.session as db:
+        users_without_interests_ids = []
+        all_interests = db.query(Interest).all()
+        users_with_interests_ids = []
+        for interest in all_interests:
+            users_with_interests_ids.append(interest.owner_id)
+        users_with_interests_ids = set(users_with_interests_ids)
+        all_users = db.query(User).all()
+        for user in all_users:
+            if user.id not in users_with_interests_ids:
+                users_without_interests_ids.append(user.id)
+        return users_without_interests_ids
+
+
