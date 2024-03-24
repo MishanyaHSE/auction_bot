@@ -185,6 +185,11 @@ async def send_notifications_about_auction(auction_id):
     already_sent = []
     for interest in interests:
         if interest.owner_id not in already_sent and interest.owner_id != get_auction(auction_id).owner_id:
+            msges = await bot.send_media_group(interest.owner_id, create_photos_for_item(get_item(get_auction(auction_id).item_id)))
+            photos_ids = ''
+            for msg in msges:
+                photos_ids += '_' + str(msg.id)
+                messages_to_delete[interest.owner_id].append(msg.id)
             await send_and_save_with_markup(interest.owner_id,
                                             'Новый аукцион для вас!\n' + create_auction_message(
                                                 get_auction(auction_id)),
@@ -192,6 +197,12 @@ async def send_notifications_about_auction(auction_id):
             already_sent.append(interest.owner_id)
     ids_without_interests = get_users_without_interests()
     for id in ids_without_interests:
+        msges = await bot.send_media_group(id,
+                                           create_photos_for_item(get_item(get_auction(auction_id).item_id)))
+        photos_ids = ''
+        for msg in msges:
+            photos_ids += '_' + str(msg.id)
+            messages_to_delete[id].append(msg.id)
         await send_and_save_with_markup(id,
                                         'Новый аукцион был опубликован!\n' + create_auction_message(
                                             get_auction(auction_id)),
