@@ -470,6 +470,10 @@ async def open_items(message):
         if user_items.first() is not None or won_auctions.first() is not None:
             if user_items.first() is not None:
                 for item in user_items:
+                    #
+                    auction = get_auction_for_item(item.id)
+                    await send_and_save(message.chat.id, str(auction.winner_id) + ' ' + str(auction.state) + str(get_user_info(auction.winner_id).nick) + ' ' + str(get_max_bid(auction.id).amount))
+                    #
                     # markup = types.InlineKeyboardMarkup(row_width=1)
                     # markup.add(
                     #     types.InlineKeyboardButton('Создать аукцион', callback_data='create_auction_' + str(item.id)))
