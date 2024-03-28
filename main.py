@@ -250,12 +250,13 @@ async def get_auctions_for_filter(interest):
 @bot.message_handler(commands=['start'])
 async def send_welcome_message(message):
     if message.from_user.username is None:
-        messages_to_delete[message.chat.id] = []
+        if message.chat.id not in messages_to_delete:
+            messages_to_delete[message.chat.id] = []
         messages_to_delete[message.chat.id].append(message.id)
         await send_and_save(message.chat.id, 'Для использования бота необходимо, чтобы у вашего аккаунта был никнейм. Инструкци по созданию: https://uchet-jkh.ru/i/kak-sozdat-nikneim-v-telegrame/\nПосле того, как создадите - возвращайтесь и используйте команду /start')
         return
     if message.chat.id not in states:
-        if messages_to_delete[message.chat.id] is not None:
+        if message.chat.id in messages_to_delete:
             await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id] = []
         messages_to_delete[message.chat.id].append(message.id)
@@ -278,6 +279,8 @@ async def send_welcome_message(message):
 @bot.message_handler(commands=['add_interest'])
 async def add_interest(message):
     if get_user_info(message.chat.id) is None:
+        if message.chat.id not in messages_to_delete:
+            messages_to_delete[message.chat.id] = []
         await send_and_save(message.chat.id, 'Сперва необходимо пройти регистрацию, используйте команду /start')
         return
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
@@ -298,6 +301,8 @@ async def add_interest(message):
 @bot.message_handler(commands=['profile'])
 async def open_profile(message):
     if get_user_info(message.chat.id) is None:
+        if message.chat.id not in messages_to_delete:
+            messages_to_delete[message.chat.id] = []
         await send_and_save(message.chat.id, 'Сперва необходимо пройти регистрацию, используйте команду /start')
         return
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
@@ -316,6 +321,8 @@ async def open_profile(message):
 @bot.message_handler(commands=['coming_auctions'])
 async def open_coming_auctions(message):
     if get_user_info(message.chat.id) is None:
+        if message.chat.id not in messages_to_delete:
+            messages_to_delete[message.chat.id] = []
         await send_and_save(message.chat.id, 'Сперва необходимо пройти регистрацию, используйте команду /start')
         return
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
@@ -351,6 +358,8 @@ async def open_coming_auctions(message):
 @bot.message_handler(commands=['all_auctions'])
 async def open_coming_auctions(message):
     if get_user_info(message.chat.id) is None:
+        if message.chat.id not in messages_to_delete:
+            messages_to_delete[message.chat.id] = []
         await send_and_save(message.chat.id, 'Сперва необходимо пройти регистрацию, используйте команду /start')
         return
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
@@ -386,6 +395,8 @@ async def open_coming_auctions(message):
 @bot.message_handler(commands=['interests'])
 async def open_interests(message):
     if get_user_info(message.chat.id) is None:
+        if message.chat.id not in messages_to_delete:
+            messages_to_delete[message.chat.id] = []
         await send_and_save(message.chat.id, 'Сперва необходимо пройти регистрацию, используйте команду /start')
         return
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
@@ -444,6 +455,8 @@ async def show_users(message):
 @bot.message_handler(commands=['my_auctions'])
 async def open_items(message):
     if get_user_info(message.chat.id) is None:
+        if message.chat.id not in messages_to_delete:
+            messages_to_delete[message.chat.id] = []
         await send_and_save(message.chat.id, 'Сперва необходимо пройти регистрацию, используйте команду /start')
         return
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
@@ -493,6 +506,8 @@ async def open_items(message):
 @bot.message_handler(commands=['add_auction'])
 async def add_item(message):
     if get_user_info(message.chat.id) is None:
+        if message.chat.id not in messages_to_delete:
+            messages_to_delete[message.chat.id] = []
         await send_and_save(message.chat.id, 'Сперва необходимо пройти регистрацию, используйте команду /start')
         return
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
@@ -752,7 +767,7 @@ async def get_item_photos(message):
     if states[message.chat.id] == 'on_adding_items':
         if items[message.chat.id].currentState == 'getDocument_available' or items[
             message.chat.id].currentState == 'getBox_available':
-            if len(items[message.chat.id].photos) == 0:
+            if len(items[message.chat.id].photos) == 2:
                 current_bot_message = items[message.chat.id].create_item('')
                 if current_bot_message != '':
                     await send_and_save_with_markup(message.chat.id, current_bot_message, create_yes_or_no_button())
@@ -763,6 +778,19 @@ async def get_item_photos(message):
             await send_and_save(message.chat.id, 'Фото необходимо прикрепить на соответствующем этапе')
     else:
         await send_and_save(message.chat.id, 'Фото необходимо отправлять во время добавления предмета в профиль')
+
+
+@bot.message_handler(content_types=['video'])
+async def handle_video(message):
+    messages_to_delete[message.chat.id].append(message.id)
+    if is_blocked(message.chat.id):
+        await send_and_save(message.chat.id,
+                            f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}')
+        return
+    if states[message.chat.id] == 'on_adding_items' and items[message.chat.id].currentState == 'getBox_available':
+        await send_and_save(message.chat.id, f'К предмету будут добавлены только фото. Пришлите еще {3 - len(items[message.chat.id].photos)} фото')
+    else:
+        await send_and_save(message.chat.id, f'Бот не поддерживает отправку видео')
 
 
 # Обработка всех текстовых сообщений, которые не являются командами
@@ -846,7 +874,7 @@ async def handle_request(message):
                 await send_and_save_with_markup(message.chat.id, current_bot_message,
                                                 create_back_to_main_menu_button())
         else:
-            await send_and_save(message.chat.id, 'Необходимо прикрепить хотя бы три фото')
+            await send_and_save(message.chat.id, f'Необходимо прикрепить еще {3 - len(items[message.chat.id].photos)} фото(прикреплять видео запрещено, они не будут сохранены).')
     elif states[message.chat.id] == 'can_end_item_survey' and (message.text == 'Да' or message.text == 'да'):
         await clear_chat(message.chat.id)
         items[message.chat.id] = NewItem()
