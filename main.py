@@ -233,7 +233,7 @@ async def send_auction_to_moderation(auction_id):
         messages_to_delete[moderator_id].append(msg.id)
     await send_and_save_with_markup(
         moderator_id,
-        f'Владелец часов: @{get_user_info(auction.owner_id).nick}\n' + create_auction_message(auction),
+        f'Владелец часов: @{escape_markdown(get_user_info(auction.owner_id).nick)}\n' + create_auction_message(auction),
         markup, 'Markdown'
     )
 
@@ -444,7 +444,7 @@ async def show_users(message):
         for user in users:
             if user.id != moderator_id:
                 text = f'Имя: {user.username}\n' \
-                       f'Тег: @{user.nick}\n' \
+                       f'Тег: @{escape_markdown(user.nick)}\n' \
                        f'Компания: {user.company_name}\n' \
                        f'Сайт: {user.company_website}'
                 if is_blocked(user.id):
@@ -501,7 +501,7 @@ async def open_items(message):
                         await send_and_save(message.chat.id, create_item_text(item))
             if won_auctions.first() is not None:
                 for auction in won_auctions:
-                    text = f'\n\n*Вы выиграли аукцион*\nВаша победная ставка: {get_max_bid(auction.id)}\nСвяжитесь с \@{get_user_info(auction.owner_id).nick} для оплаты и получения часов'
+                    text = f'\n\n*Вы выиграли аукцион*\nВаша победная ставка: {get_max_bid(auction.id)}\nСвяжитесь с \@{escape_markdown(get_user_info(auction.owner_id).nick)} для оплаты и получения часов'
                     await send_and_save(message.chat.id, create_item_text(get_item(auction.item_id)) + text, 'Markdown')
         else:
             await send_and_save(message.chat.id,
