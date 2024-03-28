@@ -770,7 +770,7 @@ async def get_item_photos(message):
             f_id = message.photo[-1].file_id
             file_info = await bot.get_file(f_id)
             items[message.chat.id].append_photo(file_info)
-            if len(items[message.chat.id].photos) == 2:
+            if len(items[message.chat.id].photos) == 3:
                 current_bot_message = items[message.chat.id].create_item('')
                 await send_and_save_with_markup(message.chat.id, current_bot_message, create_yes_or_no_button())
         else:
