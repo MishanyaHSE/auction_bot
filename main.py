@@ -391,6 +391,11 @@ async def open_coming_auctions(message):
         await send_and_save(message.chat.id, 'Данную команду можно использовать только находясь в главном меню.')
 
 
+def escape_markdown(text):
+    escape_chars = '_*[]()~`>#+-=|{}.!'
+    return ''.join('\\' + char if char in escape_chars else char for char in text)
+
+
 # Отправляем отдельными сообщениями все интересы данного пользователя
 @bot.message_handler(commands=['interests'])
 async def open_interests(message):
@@ -486,7 +491,7 @@ async def open_items(message):
                         elif auction.state == 'going':
                             text = f'\n\n*Предмет в данный момент разыгрывается на аукционе*\nТекущая ставка: {get_max_bid(auction.id).amount}\nАукцион закончится: {auction.duration}'
                         elif auction.state == 'finished' and auction.winner_id is not None:
-                            text = f'\n\n*Вы продали предмет на аукционе*\nЦена: {get_max_bid(auction.id).amount}\nПокупатель: {get_user_info(auction.winner_id).nick}'
+                            text = f'\n\n*Вы продали предмет на аукционе*\nЦена: {get_max_bid(auction.id).amount}\nПокупатель: @{escape_markdown(get_user_info(auction.winner_id).nick)}'
                         elif auction.state == 'finished':
                             text = f'\n\n*Аукцион не состоялся*'
                         else:
