@@ -470,10 +470,6 @@ async def open_items(message):
         if user_items.first() is not None or won_auctions.first() is not None:
             if user_items.first() is not None:
                 for item in user_items:
-                    #
-                    auction = get_auction_for_item(item.id)
-                    await send_and_save(message.chat.id, str(auction.winner_id) + ' ' + str(auction.state) + str(get_user_info(auction.winner_id).nick) + ' ' + str(get_max_bid(auction.id).amount))
-                    #
                     # markup = types.InlineKeyboardMarkup(row_width=1)
                     # markup.add(
                     #     types.InlineKeyboardButton('Создать аукцион', callback_data='create_auction_' + str(item.id)))
@@ -490,7 +486,7 @@ async def open_items(message):
                         elif auction.state == 'going':
                             text = f'\n\n*Предмет в данный момент разыгрывается на аукционе*\nТекущая ставка: {get_max_bid(auction.id).amount}\nАукцион закончится: {auction.duration}'
                         elif auction.state == 'finished' and auction.winner_id is not None:
-                            text = f'\n\n*Вы продали предмет на аукционе*\nЦена: {get_max_bid(auction.id).amount}\nПокупатель: \@{get_user_info(auction.winner_id).nick}'
+                            text = f'\n\n*Вы продали предмет на аукционе*\nЦена: {get_max_bid(auction.id).amount}\nПокупатель: {get_user_info(auction.winner_id).nick}'
                         elif auction.state == 'finished':
                             text = f'\n\n*Аукцион не состоялся*'
                         else:
