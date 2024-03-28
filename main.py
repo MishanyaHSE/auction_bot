@@ -486,7 +486,7 @@ async def open_items(message):
                         elif auction.state == 'going':
                             text = f'\n\n*Предмет в данный момент разыгрывается на аукционе*\nТекущая ставка: {get_max_bid(auction.id).amount}\nАукцион закончится: {auction.duration}'
                         elif auction.state == 'finished' and auction.winner_id is not None:
-                            text = f'\n\n*Вы продали предмет на аукционе*\nЦена: {get_max_bid(auction.id).amount}\nПокупатель: @{get_user_info(auction.winner_id).nick}'
+                            text = f'\n\n*Вы продали предмет на аукционе*\nЦена: {get_max_bid(auction.id).amount}\nПокупатель: \@{get_user_info(auction.winner_id).nick}'
                         elif auction.state == 'finished':
                             text = f'\n\n*Аукцион не состоялся*'
                         else:
@@ -496,7 +496,7 @@ async def open_items(message):
                         await send_and_save(message.chat.id, create_item_text(item))
             if won_auctions.first() is not None:
                 for auction in won_auctions:
-                    text = f'\n\n*Вы выиграли аукцион*\nВаша победная ставка: {get_max_bid(auction.id)}\nСвяжитесь с @{get_user_info(auction.owner_id).nick} для оплаты и получения часов'
+                    text = f'\n\n*Вы выиграли аукцион*\nВаша победная ставка: {get_max_bid(auction.id)}\nСвяжитесь с \@{get_user_info(auction.owner_id).nick} для оплаты и получения часов'
                     await send_and_save(message.chat.id, create_item_text(get_item(auction.item_id)) + text, 'Markdown')
         else:
             await send_and_save(message.chat.id,
