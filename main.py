@@ -767,13 +767,12 @@ async def get_item_photos(message):
     if states[message.chat.id] == 'on_adding_items':
         if items[message.chat.id].currentState == 'getDocument_available' or items[
             message.chat.id].currentState == 'getBox_available':
-            if len(items[message.chat.id].photos) == 2:
-                current_bot_message = items[message.chat.id].create_item('')
-                if current_bot_message != '':
-                    await send_and_save_with_markup(message.chat.id, current_bot_message, create_yes_or_no_button())
             f_id = message.photo[-1].file_id
             file_info = await bot.get_file(f_id)
             items[message.chat.id].append_photo(file_info)
+            if len(items[message.chat.id].photos) == 2:
+                current_bot_message = items[message.chat.id].create_item('')
+                await send_and_save_with_markup(message.chat.id, current_bot_message, create_yes_or_no_button())
         else:
             await send_and_save(message.chat.id, 'Фото необходимо прикрепить на соответствующем этапе')
     else:

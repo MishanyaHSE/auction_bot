@@ -61,8 +61,6 @@ class NewItem:
                 self.box_available = True
             elif text == 'Нет':
                 self.box_available = False
-            elif text == '':
-                return ''
             else:
                 return 'Необходимо выбрать Да/Нет'
             self.currentState = 'getLocation'
@@ -72,8 +70,6 @@ class NewItem:
                 self.document_available = True
             elif text == 'Нет':
                 self.document_available = False
-            elif text == '':
-                pass
             else:
                 return 'Необходимо выбрать Да/Нет'
             self.currentState = 'getComments'
