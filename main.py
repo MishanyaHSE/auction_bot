@@ -55,6 +55,9 @@ async def create_end_auction_task(auction_id):
     schedule.every().day.at(time).do(end_auction, auction_id).tag('end_auction_' + str(auction_id))
 
 
+
+
+
 async def create_autobids_task(auction_id):
     time = str((get_auction(auction_id).duration - timedelta(minutes=TIME_FOR_AUTO_BIDS)).time())[:-3]
     schedule.every().day.at(time).do(use_auto_bids, auction_id).tag('auto_bids_' + str(auction_id))
@@ -73,6 +76,10 @@ async def unblock_users():
     for user in users:
         if user.ban is not None and datetime.now() >= user.ban:
             unblock_user(user.id)
+
+
+# async def update_nicks():
+
 
 
 async def use_auto_bids(auction_id):
@@ -151,12 +158,13 @@ schedule.every().day.at('00:00').do(unblock_users)
 
 
 async def clear_chat(chat_id):
-    for m_id in messages_to_delete[chat_id]:
-        try:
-            await bot.delete_message(chat_id=chat_id, message_id=m_id)
-        except:
-            pass
-    messages_to_delete[chat_id].clear()
+    if messages_to_delete[chat_id] is not None:
+        for m_id in messages_to_delete[chat_id]:
+            try:
+                await bot.delete_message(chat_id=chat_id, message_id=m_id)
+            except:
+                pass
+        messages_to_delete[chat_id].clear()
 
 
 async def send_and_save(m_id, text, parse_mode=None):
@@ -226,7 +234,7 @@ async def send_auction_to_moderation(auction_id):
     await send_and_save_with_markup(
         moderator_id,
         f'Владелец часов: @{get_user_info(auction.owner_id).nick}\n' + create_auction_message(auction),
-        markup
+        markup, 'Markdown'
     )
 
 
@@ -241,7 +249,14 @@ async def get_auctions_for_filter(interest):
 # и обновляя текущий статус пользователя
 @bot.message_handler(commands=['start'])
 async def send_welcome_message(message):
+    if message.from_user.username is None:
+        messages_to_delete[message.chat.id] = []
+        messages_to_delete[message.chat.id].append(message.id)
+        await send_and_save(message.chat.id, 'Для использования бота необходимо, чтобы у вашего аккаунта был никнейм. Инструкци по созданию: https://uchet-jkh.ru/i/kak-sozdat-nikneim-v-telegrame/\nПосле того, как создадите - возвращайтесь и используйте команду /start')
+        return
     if message.chat.id not in states:
+        if messages_to_delete[message.chat.id] is not None:
+            await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id] = []
         messages_to_delete[message.chat.id].append(message.id)
         states[message.chat.id] = 'notRegistered'
@@ -267,7 +282,7 @@ async def add_interest(message):
         return
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
         if is_blocked(message.chat.id):
-            await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}.')
+            await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}')
             return
         await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id].append(message.id)
@@ -287,7 +302,7 @@ async def open_profile(message):
         return
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
         if is_blocked(message.chat.id):
-            await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}.')
+            await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}')
             return
         await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id].append(message.id)
@@ -305,7 +320,7 @@ async def open_coming_auctions(message):
         return
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
         if is_blocked(message.chat.id):
-            await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}.')
+            await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}')
             return
         await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id].append(message.id)
@@ -340,7 +355,7 @@ async def open_coming_auctions(message):
         return
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
         if is_blocked(message.chat.id):
-            await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}.')
+            await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}')
             return
         await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id].append(message.id)
@@ -349,14 +364,16 @@ async def open_coming_auctions(message):
             auctions_available = False
             for id in au_ids:
                 auction = get_auction(id)
+                auctions_available = True
+                msges = await bot.send_media_group(message.chat.id, create_photos_for_item(get_item(auction.item_id)))
+                photos_ids = ''
+                for msg in msges:
+                    photos_ids += '_' + str(msg.id)
+                    messages_to_delete[message.chat.id].append(msg.id)
                 if auction.owner_id != message.chat.id:
-                    auctions_available = True
-                    msges = await bot.send_media_group(message.chat.id, create_photos_for_item(get_item(auction.item_id)))
-                    photos_ids = ''
-                    for msg in msges:
-                        photos_ids += '_' + str(msg.id)
-                        messages_to_delete[message.chat.id].append(msg.id)
                     await send_and_save_with_markup(message.chat.id, create_auction_message(auction), create_button_to_part_in_auction(id))
+                else:
+                    await send_and_save(message.chat.id, create_auction_message(auction) + '\n\n*Вы являетесь владельцем аукциона*', 'Markdown')
             if not auctions_available:
                 await send_and_save(message.chat.id, 'На данный момент нет доступных аукционов для участия')
         else:
@@ -373,7 +390,7 @@ async def open_interests(message):
         return
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
         if is_blocked(message.chat.id):
-            await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}.')
+            await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}')
             return
         await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id].append(message.id)
@@ -411,7 +428,9 @@ async def show_users(message):
         for user in users:
             if user.id != moderator_id:
                 text = f'Имя: {user.username}\n' \
-                       f'Тег: @{user.nick}'
+                       f'Тег: @{user.nick}\n' \
+                       f'Компания: {user.company_name}\n' \
+                       f'Сайт: {user.company_website}'
                 if is_blocked(user.id):
                     markup = create_unblock_button(user.id)
                     text += f'\n*Заблокирован до {str(user.ban)}*'
@@ -429,7 +448,7 @@ async def open_items(message):
         return
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
         if is_blocked(message.chat.id):
-            await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}.')
+            await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}')
             return
         await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id].append(message.id)
@@ -478,7 +497,7 @@ async def add_item(message):
         return
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu':
         if is_blocked(message.chat.id):
-            await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}.')
+            await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}')
             return
         await clear_chat(message.chat.id)
         messages_to_delete[message.chat.id].append(message.id)
@@ -598,8 +617,7 @@ async def brand_buttons_action(call):
             await send_and_save(
                 auction.owner_id,
                 'Ваш аукцион был отклонен! Убедитесь, что в объявлении '
-                f'не было ошибки или свяжитесь с модератором @{get_user_info(moderator_id).nick}'
-            )
+                f'не было ошибки или свяжитесь с модератором @{get_user_info(moderator_id).nick}')
         elif call.data.find('participate') != -1:
             save_buyer(call.data.split('_')[1], call.message.chat.id)
             await send_and_save(call.message.chat.id,
@@ -649,7 +667,7 @@ async def brand_buttons_action(call):
             unblock_user(user_id)
             text = call.message.text.split('\n')[0] + '\n' + call.message.text.split('\n')[1]
             await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id,
-                                        text=text, reply_markup=create_block_buttons(user_id))
+                                        text=text, reply_markup=create_block_buttons(user_id), parse_mode='Markdown')
         elif call.data.find('block') != -1:
             user_id = call.data.split('_')[1]
             date = datetime.now()
@@ -695,7 +713,7 @@ async def save_photos_to_folder(info_list, item_id):
 
 def create_user(user_id):
     hl = reg_handlers[user_id]
-    return User(id=user_id, username=hl.name + ' ' + hl.surname, company_name=hl.company_name,
+    return User(id=user_id, username=hl.name, company_name=hl.company_name,
                 company_website=hl.website, phone=hl.phone, nick=hl.nick, ban=None)
 
 
@@ -752,7 +770,7 @@ async def get_item_photos(message):
 async def handle_request(message):
     messages_to_delete[message.chat.id].append(message.id)
     if is_blocked(message.chat.id):
-        await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}.')
+        await send_and_save(message.chat.id, f'К сожалению, вы были заблокированы. Обратитесь к модератору @{get_user_info(moderator_id).nick}')
         return
     if message.text == 'Назад' or message.text == 'В главное меню':
         states[message.chat.id] = 'on_main_menu'

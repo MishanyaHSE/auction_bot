@@ -32,6 +32,8 @@ class AuctionHandler:
         elif self.currentState == 'getStartTime':
             if len(text) == 5 and text[2] == '.':
                 self.start_date = date(2024, int(text.split('.')[1]), int(text.split('.')[0]))
+                if self.start_date < datetime.now().date():
+                    return f'Некорректная дата аукциона. Сегодня {datetime.now().date()}\n' + self.states['getStartDate']
                 self.currentState = 'check'
                 return self.states['getStartTime']
             else:
@@ -57,6 +59,8 @@ class AuctionHandler:
 
                 self.end_date_time = datetime.combine(self.start_date, end_time) + timedelta(days=1 if not end_time.hour else 0)
                 self.start_date_time = datetime.combine(self.start_date, self.start_time)
+                if self.start_date_time <= datetime.now():
+                    return "Некорректное время начала аукциона.\n" + self.states['getStartTime']
                 self.currentState = 'end'
                 auction_inf = self.auction_info() + 'Все верно?'
                 return auction_inf

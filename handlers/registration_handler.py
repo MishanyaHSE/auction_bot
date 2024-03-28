@@ -2,33 +2,27 @@ class RegistrationHandler:
 
     def __init__(self):
         self.id = 0
-        self.surname = None
         self.name = None
         self.phone = None
         self.company_name = None
         self.website = None
+        self.nick = None
         self.states = {
             'getName': 'Пожалуйста, укажите ваше имя:',
-            'getSurname': 'Теперь ваша Фамилия:',
             'getPhone': 'Теперь укажите Ваш номер телефона:',
-            'getCompanyName': 'Записал, теперь название вашей копании:',
+            'getCompanyName': 'Записал, теперь название вашей компании:',
             'getWebsite': 'Сайт вашей компании:',
             'check': 'Давайте проверим, что я все верно записал:',
             'end': ''
         }
-        self.nick = None
         self.currentState = 'getName'
 
     def do_registration(self, text):
         if self.currentState == 'getName':
-            self.currentState = 'getSurname'
-            return self.states['getName']
-        elif self.currentState == 'getSurname':
-            self.name = text
             self.currentState = 'getPhone'
-            return self.states['getSurname']
+            return self.states['getName']
         elif self.currentState == 'getPhone':
-            self.surname = text
+            self.name = text
             self.currentState = 'getCompanyName'
             return self.states['getPhone']
         elif self.currentState == 'getCompanyName':
@@ -54,7 +48,7 @@ class RegistrationHandler:
         return ''
 
     def get_user_profile(self):
-        return f'Ваше имя: {self.name} {self.surname}\n' \
+        return f'Ваше имя: {self.name}\n' \
                f'Ваш номер телефона: {self.phone}\n' \
                f'Название вашей компании: {self.company_name}\n' \
                f'Вебсайт компании: {self.website}\n'

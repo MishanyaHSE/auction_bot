@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, ForeignKey, Float, Table, or_
+from sqlalchemy import create_engine, Column, Integer, BigInteger, String, DateTime, Boolean, ForeignKey, Float, Table, or_
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, DeclarativeBase, Session
 
@@ -15,15 +15,15 @@ class Base(DeclarativeBase):
 
 class User(Base):
     __tablename__ = 'users'
-    id = Column(Integer, primary_key=True)
+    id = Column(BigInteger, primary_key=True)
     phone = Column(String)
     username = Column(String)
     company_name = Column(String)
     company_website = Column(String)
     rating = Column(Float)
     status = Column(String)
-    nick = Column(String)
     ban = Column(DateTime)
+    nick = Column(String)
 
     items = relationship("Item", back_populates="owner")
 
@@ -42,7 +42,7 @@ class Item(Base):
     id = Column(Integer, primary_key=True)
     brand = Column(String)
     reference = Column(String)
-    price = Column(Float)
+    price = Column(Integer)
     box_available = Column(Boolean)
     document_available = Column(Boolean)
     city = Column(String)
@@ -72,7 +72,7 @@ class Auction(Base):
 class Bid(Base):
     __tablename__ = 'bids'
     id = Column(Integer, primary_key=True)
-    amount = Column(Float)
+    amount = Column(Integer)
     time = Column(DateTime)
     auction_id = Column(Integer, ForeignKey('auctions.id'))
     bidder_id = Column(Integer, ForeignKey('users.id'))
@@ -84,7 +84,7 @@ class Bid(Base):
 class AutoBid(Base):
     __tablename__ = 'auto_bids'
     id = Column(Integer, primary_key=True)
-    amount = Column(Float)
+    amount = Column(Integer)
     bid_time = Column(DateTime)
     auction_id = Column(Integer, ForeignKey('auctions.id'))
     bidder_id = Column(Integer, ForeignKey('users.id'))
