@@ -23,10 +23,10 @@ class NewItem:
                         f'-обратная сторона застежки\n'
                         f'-коробка(при наличии)\n'
                         f'-документы(при наличии)\n',
-            'getBox_available': 'Имеется ли коробка от часов:',
-            'getDocument_available': 'Документы от часов:',
+            'getBox_available': 'Имеется ли коробка от часов:("Да"/"Нет")',
+            'getDocument_available': 'Документы от часов:("Да"/"Нет")',
             'getLocation': 'Укажите город, из которого будет произвдена отправка предмета:',
-            'getComments': 'Можете написать коментарий к часам, если не хотите, напишите "нет":',
+            'getComments': 'Опишите диффекты своих часов, если их нет, нажмите "Пропустить":',
             'check': 'Давайте проверим, что я все верно записал:',
             'end': ''
         }
@@ -83,6 +83,8 @@ class NewItem:
                 return self.states['getComments']
         elif self.currentState == 'check':
             self.comments = text
+            if self.comments == 'Пропустить':
+                self.comments = None
             auction_inf = self.states['check'] + '\n' + self.auction_info() + 'Все верно?'
             self.currentState = 'end'
             return auction_inf
@@ -105,13 +107,15 @@ class NewItem:
             docs = 'Да'
         if self.box_available:
             box = 'Да'
-        return f'Бренд: {self.brand}\n' \
+        text = f'Бренд: {self.brand}\n' \
                f'Референс: {self.reference}\n' \
                f'Цена: {self.price}\n' \
                f'Коробка: {box}\n' \
                f'Документы: {docs}\n' \
-               f'Город: {self.city}\n' \
-               f'Коментарий: {self.comments}\n'
+               f'Город: {self.city}\n'
+        if self.comments is not None:
+            text += f'Коментарий: {self.comments}\n'
+        return text
 
     def append_photo(self, file_info):
         self.photos.append(file_info)

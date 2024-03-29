@@ -11,19 +11,18 @@ other_brands = ['Alain Silberstein', 'Arnold Son', 'Blancpain', 'Bovet', 'Chopar
                 'Journe', 'Konstantin Chaykin', 'Lange&Sohne', 'Omega', 'Panerai', 'Parmigiani', 'Piaget',
                 'Ressence', 'Roger Dubuis', 'Romain Jerome', 'Tudor', 'Urwerk', 'Zenith']
 
-
 main_menu_mess = f'Вы находитесь в главном меню, используйте команды для управления ботом:\n' \
-                    f'/all_auctions - Просмотр всех аукционов\n' \
-                    f'/coming_auctions - Просмотр аукционов, в которых вы участвуете\n' \
-                    f'/add_interest - Создание фильтра уведомлений об аукционах\n' \
-                    f'/interests - Просмотр ваших уведомлений по бренду и цене\n' \
-                    f'/add_auction - Создание аукциона\n' \
-                    f'/my_auctions - Просмотр ваших аукционов\n' \
-                    f'/profile - Просмотр профиля'
-
+                 f'/all_auctions - Просмотр всех аукционов\n' \
+                 f'/coming_auctions - Просмотр аукционов, в которых вы участвуете\n' \
+                 f'/add_interest - Создание фильтра уведомлений об аукционах\n' \
+                 f'/interests - Просмотр ваших уведомлений по бренду и цене\n' \
+                 f'/add_auction - Создание аукциона\n' \
+                 f'/my_auctions - Просмотр ваших аукционов\n' \
+                 f'/profile - Просмотр профиля'
 
 main_menu_message_for_moderator = main_menu_mess + '\n\n' + 'Список команд модератора:\n' \
-                                                               '/show_users - открыть список пользователей для блокировки или разблокировки\n'
+                                                            '/show_users - открыть список пользователей для блокировки или разблокировки\n'
+
 
 def is_positive_number(s):
     try:
@@ -37,9 +36,9 @@ def is_positive_number(s):
 
 def create_user_info_message(user):
     return f'Ваше имя: {user.username}\n' \
-               f'Ваш номер телефона: {user.phone}\n' \
-               f'Название вашей компании: {user.company_name}\n' \
-               f'Вебсайт компании: {user.company_website}\n'
+           f'Ваш номер телефона: {user.phone}\n' \
+           f'Название вашей компании: {user.company_name}\n' \
+           f'Вебсайт компании: {user.company_website}\n'
 
 
 def create_interest_message(interest):
@@ -51,8 +50,8 @@ def create_interest_message(interest):
 def create_auction_message(auction):
     item = get_item(auction.item_id)
     auction_info = f'Минимальный шаг: {auction.bid_step}\n' \
-                   f'Начало: {auction.start_date}МСК\n' \
-                   f'Конец: {auction.duration}МСК\n'
+                   f'Начало: {auction.start_date} МСК\n' \
+                   f'Конец: {auction.duration} МСК\n'
     return f'Предмет:\n' + create_item_text(item) + '\n' + f'Аукцион:\n' + auction_info
 
 
@@ -63,13 +62,15 @@ def create_item_text(item):
         box = 'Да'
     if item.document_available:
         docs = 'Да'
-    return     f'Бренд: {item.brand}\n' \
+    text = f'Бренд: {item.brand}\n' \
                f'Референс: {item.reference}\n' \
                f'Цена: {item.price}\n' \
                f'Коробка: ' + box + '\n'\
                f'Документы: ' + docs + '\n'\
-               f'Город: {item.city}\n'\
-               f'Коментарий: {item.comments}\n'
+               f'Город: {item.city}\n'
+    if item.comments is not None:
+        text += f'Комментарий: {item.comments}\n'
+    return text
 
 
 def create_photos_for_item(item):
@@ -78,5 +79,3 @@ def create_photos_for_item(item):
     for photo in photos:
         medias.append(types.InputMediaPhoto(open(photo.name, 'rb')))
     return medias
-
-
