@@ -47,7 +47,7 @@ class Item(Base):
     document_available = Column(Boolean)
     city = Column(String)
     comments = Column(String)
-    owner_id = Column(Integer, ForeignKey('users.id'))
+    owner_id = Column(BigInteger, ForeignKey('users.id'))
 
     owner = relationship("User", back_populates="items")
     photos = relationship("Photo", back_populates="item")
@@ -60,8 +60,8 @@ class Auction(Base):
     start_date = Column(DateTime)
     duration = Column(DateTime)
     item_id = Column(Integer, ForeignKey('items.id'))
-    owner_id = Column(Integer, ForeignKey('users.id'))
-    winner_id = Column(Integer, ForeignKey('users.id'))
+    owner_id = Column(BigInteger, ForeignKey('users.id'))
+    winner_id = Column(BigInteger, ForeignKey('users.id'))
     state = Column(String)
 
     item = relationship("Item")
@@ -75,7 +75,7 @@ class Bid(Base):
     amount = Column(Integer)
     time = Column(DateTime)
     auction_id = Column(Integer, ForeignKey('auctions.id'))
-    bidder_id = Column(Integer, ForeignKey('users.id'))
+    bidder_id = Column(BigInteger, ForeignKey('users.id'))
 
     auction = relationship("Auction")
     bidder = relationship("User", foreign_keys=[bidder_id])
@@ -87,7 +87,7 @@ class AutoBid(Base):
     amount = Column(Integer)
     bid_time = Column(DateTime)
     auction_id = Column(Integer, ForeignKey('auctions.id'))
-    bidder_id = Column(Integer, ForeignKey('users.id'))
+    bidder_id = Column(BigInteger, ForeignKey('users.id'))
 
     auction = relationship("Auction")
     bidder = relationship("User", foreign_keys=[bidder_id])
@@ -96,7 +96,7 @@ class AutoBid(Base):
 class Interest(Base):
     __tablename__ = 'interests'
     id = Column(Integer, primary_key=True)
-    owner_id = Column(Integer, ForeignKey('users.id'))
+    owner_id = Column(BigInteger, ForeignKey('users.id'))
     brand = Column(String)
     min_price = Column(Integer)
     max_price = Column(Integer)
@@ -107,8 +107,8 @@ class Interest(Base):
 class Review(Base):
     __tablename__ = 'reviews'
     id = Column(Integer, primary_key=True)
-    reviewer_id = Column(Integer, ForeignKey('users.id'))
-    owner_id = Column(Integer, ForeignKey('users.id'))
+    reviewer_id = Column(BigInteger, ForeignKey('users.id'))
+    owner_id = Column(BigInteger, ForeignKey('users.id'))
     note = Column(String)
 
     reviewer = relationship("User", foreign_keys=[reviewer_id])
@@ -119,7 +119,7 @@ class Buyer(Base):
     __tablename__ = 'buyers'
     id = Column(Integer, primary_key=True)
     auction_id = Column(Integer, ForeignKey('auctions.id'))
-    buyer_id = Column(Integer, ForeignKey('users.id'))
+    buyer_id = Column(BigInteger, ForeignKey('users.id'))
 
     auction = relationship("Auction", foreign_keys=[auction_id])
     buyer = relationship("User", foreign_keys=[buyer_id])
