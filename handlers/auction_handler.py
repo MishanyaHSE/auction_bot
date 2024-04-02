@@ -3,7 +3,7 @@ from datetime import date, time, datetime, timedelta
 from utility.utility import is_positive_number, all_brands, other_brands
 
 
-AUCTION_LENGTH_MINUTES = 30
+AUCTION_LENGTH_MINUTES = 3
 
 class AuctionHandler:
     def __init__(self):

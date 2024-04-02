@@ -24,9 +24,9 @@ auction_handler = {}
 moderator_id = int(os.environ.get('MODER_ID'))
 going_auctions = {}
 auction_messages = {}
-MINUTES_TO_ENLARGE = 2
-TIME_FOR_AUTO_BIDS = 10
-ADDITIONAL_MINUTES = 5
+MINUTES_TO_ENLARGE = 1
+TIME_FOR_AUTO_BIDS = 2
+ADDITIONAL_MINUTES = 1
 
 
 async def end_auction(auction_id):
