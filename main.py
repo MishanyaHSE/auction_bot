@@ -248,7 +248,7 @@ async def send_auction_to_moderation(auction_id):
         messages_to_delete[moderator_id].append(msg.id)
     await send_and_save_with_markup(
         moderator_id,
-        f'Владелец часов: @{escape_markdown(get_user_info(auction.owner_id).nick)}\n' + escape_markdown(create_auction_message(auction)),
+        f'Владелец часов: @{escape_markdown(get_user_info(auction.owner_id).nick)}\n' + create_auction_message(auction),
         markup, 'Markdown'
     )
 
@@ -928,7 +928,7 @@ async def handle_request(message):
                 photos_ids += '_' + str(msg.id)
                 messages_to_delete[message.chat.id].append(msg.id)
             msg = "*Часы:* \n" + escape_markdown(create_item_text(
-                get_item(auction_handler[message.chat.id].item_id))) + '*Аукцион:*\n' + escape_markdown(current_bot_message)
+                get_item(auction_handler[message.chat.id].item_id))) + '*Аукцион:*\n' + current_bot_message
             await send_and_save_with_markup(message.chat.id, msg, create_yes_or_no_button(), 'Markdown')
         else:
             if current_bot_message == 'Укажите минимальный шаг ставки:': # очень плохо, переделать
