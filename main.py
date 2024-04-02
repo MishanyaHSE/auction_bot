@@ -75,7 +75,7 @@ async def start_auction(auction_id):
         for msg in msges:
             photos_ids += '_' + str(msg.id)
             messages_to_delete[buyer.buyer_id].append(msg.id)
-        await send_and_save_with_markup(buyer.buyer_id, create_auction_message(au), markup)
+        await send_and_save_with_markup(buyer.buyer_id, 'Аукцион начался!\n' + create_auction_message(au), markup)
         is_changeable = True
         if (au.duration - datetime.now()).total_seconds() // 60 <= TIME_FOR_AUTO_BIDS:
             is_changeable = False
@@ -103,7 +103,7 @@ async def use_auto_bids(auction_id):
     if result != 0:
         for m in auction_messages[auction_id]:
             try:
-                text = escape_markdown(create_auction_message(get_auction(auction_id))) + '\nТекущая ставка: ' + str(
+                text = create_auction_message(get_auction(auction_id)) + '\nТекущая ставка: ' + str(
                     get_max_bid(auction_id).amount)
                 if m.chat.id == auction.winner_id:
                     text += '\n\n*Вы являетесь лидером аукциона*'
@@ -967,7 +967,7 @@ async def handle_request(message):
                     auction = get_auction(auction_id)
                     for m in auction_messages[auction_id]:
                         try:
-                            text = escape_markdown(create_auction_message(get_auction(auction_id))) + '\nТекущая ставка: ' + str(get_max_bid(auction_id).amount)
+                            text = create_auction_message(get_auction(auction_id)) + '\nТекущая ставка: ' + str(get_max_bid(auction_id).amount)
                             if m.chat.id == auction.winner_id:
                                 text += '\n\n*Вы являетесь лидером аукциона*'
                             else:
