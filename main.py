@@ -401,7 +401,7 @@ async def open_coming_auctions(message):
                 if auction.owner_id != message.chat.id:
                     await send_and_save_with_markup(message.chat.id, create_auction_message(auction), create_button_to_part_in_auction(id))
                 else:
-                    await send_and_save(message.chat.id, escape_markdown(create_auction_message(auction)) + '\n\n*Вы являетесь владельцем аукциона*', 'Markdown')
+                    await send_and_save(message.chat.id, create_auction_message(auction) + '\n\n*Вы являетесь владельцем аукциона*', 'Markdown')
             if not auctions_available:
                 await send_and_save(message.chat.id, 'На данный момент нет доступных аукционов для участия')
         else:
