@@ -48,6 +48,8 @@ class AuctionHandler:
                     minutes = minutes[1]
                 hours = int(hours)
                 minutes = int(minutes)
+                if hours < 0 or hours > 23 or minutes < 0 or minutes > 59:
+                    return "Некорректное время начала аукциона.\n" + self.states['getStartTime']
                 self.start_time = time(hours, minutes)
                 if minutes + AUCTION_LENGTH_MINUTES <= 59:
                     end_time = time(hours, minutes + AUCTION_LENGTH_MINUTES)
