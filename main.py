@@ -231,8 +231,8 @@ async def send_notifications_about_auction(auction_id):
                                             'Новый аукцион был опубликован!\n' + create_auction_message(
                                                 get_auction(auction_id)),
                                             create_button_to_part_in_auction(auction_id))
-            await send_and_save(id, 'Сейчас вам приходят уведомления о всех предстоящих аукционах. Вы можете настроить фильтры при'
-                                'помощи команд /add_interest и /interests')
+            # await send_and_save(id, 'Сейчас вам приходят уведомления о всех предстоящих аукционах. Вы можете настроить фильтры при'
+            #                     'помощи команд /add_interest и /interests')
             already_sent.append(id)
 
 
