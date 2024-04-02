@@ -12,7 +12,7 @@ other_brands = ['Alain Silberstein', 'Arnold Son', 'Blancpain', 'Bovet', 'Chopar
                 'Ressence', 'Roger Dubuis', 'Romain Jerome', 'Tudor', 'Urwerk', 'Zenith']
 
 main_menu_mess = f'Вы находитесь в главном меню, используйте команды для управления ботом:\n' \
-                 f'/add_auction - Создание аукциона\n' \
+                 f'/add_auction - Выставить часы на аукцион\n' \
                  f'/all_auctions - Просмотр всех аукционов\n' \
                  f'/coming_auctions - Просмотр аукционов, в которых вы участвуете\n' \
                  f'/my_auctions - Просмотр ваших аукционов\n' \
