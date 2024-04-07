@@ -972,7 +972,7 @@ async def handle_request(message):
                                 text += '\n\n*Вы являетесь лидером аукциона*'
                             else:
                                 text += '\n\n*Вы не являетесь лидером аукциона*'
-                            await bot.edit_message_text(chat_id=m.chat.id, message_id=m.id, text=text, reply_markup=create_back_button(), parse_mode="Markdown")
+                            await bot.edit_message_text(chat_id=m.chat.id, message_id=m.id, text=text, reply_markup=create_back_button(auction_id), parse_mode="Markdown")
                         except:
                             print("MESSAGE WAS NOT FOUND")
                             if m.chat.id == previous_winner:
