@@ -8,7 +8,7 @@ all_brands = ['Audemars Piguet', 'Breguet', 'Breitling', 'Cartier', 'Daniel Roth
 
 other_brands = ['Alain Silberstein', 'Arnold Son', 'Blancpain', 'Bovet', 'Chopard', 'Chronoswiss', 'Corum', 'Cvstos',
                 'Gerald Genta', 'Girard Perregaux', 'HYT', 'Harry Winston', 'Hautlence', 'Jaquet Droz', 'Jorg Hysek',
-                'Journe', 'Konstantin Chaykin', 'Lange&Sohne', 'Omega', 'Panerai', 'Parmigiani', 'Piaget',
+                'F.P.Journe', 'Konstantin Chaykin', 'A. Lange&Sohne', 'Omega', 'Panerai', 'Parmigiani', 'Piaget',
                 'Ressence', 'Roger Dubuis', 'Romain Jerome', 'Tudor', 'Urwerk', 'Zenith']
 
 main_menu_mess = f'Вы находитесь в главном меню, используйте команды для управления ботом:\n' \
@@ -21,7 +21,8 @@ main_menu_mess = f'Вы находитесь в главном меню, исп�
                  # f'/interests - Просмотр ваших уведомлений по бренду и цене\n' \
 
 main_menu_message_for_moderator = main_menu_mess + '\n\n' + 'Список команд модератора:\n' \
-                                                            '/show_users - открыть список пользователей для блокировки или разблокировки\n'
+                                                            '/show_users - открыть список пользователей для блокировки или разблокировки\n' \
+                                                            '/waiting_users - открыть список пользователей, отправивших заявку на вступление\n'
 
 
 def is_positive_number(s):
@@ -39,6 +40,14 @@ def create_user_info_message(user):
            f'Ваш номер телефона: {user.phone}\n' \
            f'Название вашей компании: {user.company_name}\n' \
            f'Вебсайт компании: {user.company_website}\n'
+
+
+def create_user_info_for_moderation(user):
+    return f'Имя: {user.username}\n' \
+           f'Номер телефона: {user.phone}\n' \
+           f'Название компании: {user.company_name}\n' \
+           f'Вебсайт компании: {user.company_website}\n' \
+           f'Тег: @{user.nick}\n'
 
 
 def create_interest_message(interest):
@@ -64,7 +73,7 @@ def create_item_text(item):
         docs = 'Да'
     text = f'Бренд: {item.brand}\n' \
                f'Референс: {item.reference}\n' \
-               f'Цена: {item.price}\n' \
+               f'Начальная цена: {item.price}\n' \
                f'Коробка: ' + box + '\n'\
                f'Документы: ' + docs + '\n'\
                f'Город: {item.city}\n'

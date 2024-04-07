@@ -176,6 +176,13 @@ def delete_interest(interest_id):
         db.commit()  # сохраняем изменения
 
 
+def delete_user(user_id):
+    with connection.session as db:
+        user = db.query(User).filter(User.id == user_id).first()
+        db.delete(user)
+        db.commit()
+
+
 def save_item(item):
     with connection.session as db:
         db.add(item)
