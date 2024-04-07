@@ -481,7 +481,7 @@ async def show_users(message):
                        f'Тег: @{escape_markdown(user.nick)}\n' \
                        f'Компания: {escape_markdown(user.company_name)}\n' \
                        f'Сайт: {escape_markdown(user.company_website)}'
-                if is_blocked(user.id):
+                if is_blocked(user.id) and user.ban - datetime.now() <= timedelta(days=366*30):
                     markup = create_unblock_button(user.id)
                     text += f'\n*Заблокирован до {str(user.ban)}*'
                 else:
@@ -789,7 +789,7 @@ async def brand_buttons_action(call):
                                         text=call.message.text + f'*\n\nЗаблокирован до {str(date)}*',
                                         reply_markup=create_unblock_button(user_id), parse_mode='Markdown')
         elif call.data.find('not_allow') != -1:
-            await send_and_save(int(call.data.split('_')[2]), f'К сожалению, вашу заявку на вступление отклонили. Вы можете связаться с модератором @{get_user_info(moderator_id).nick} и пройти регистрацию заново, используя команду /start')
+            await send_and_save(int(call.data.split('_')[2]), f'К сожалению, вашу заявку на вступление отклонили. Вы можете связаться с модератором @{get_user_info(moderator_id).nick}.')
             await bot.delete_message(moderator_id, call.message.id)
             delete_user(int(call.data.split('_')[2]))
             states.pop(int(call.data.split('_')[2]), None)
@@ -1077,8 +1077,8 @@ async def handle_request(message):
                         photos_ids += '_' + str(msg.id)
                         messages_to_delete[previous_winner].append(msg.id)
                     await send_and_save_with_markup(previous_winner,
-                                                    "ВАШУ СТАВКУ ПЕРЕБИЛИ\n" + create_auction_message(
-                                                        auction), markup)
+                                                    "ВАШУ СТАВКУ ПЕРЕБИЛИ\n" + escape_markdown(create_auction_message(
+                                                        auction)) + '\nТекущая ставка: ' + '*' + str(get_max_bid(auction_id).amount) + '*', markup, 'Markdown')
                 else:
                     await send_and_save(message.chat.id, 'Ставка должна быть кратна шагу аукциона')
             else:
