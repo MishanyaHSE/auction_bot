@@ -2,8 +2,11 @@ from datetime import date, time, datetime, timedelta
 
 from utility.utility import is_positive_number, all_brands, other_brands
 
+if main.DEBUG_MODE:
+    AUCTION_LENGTH_MINUTES = 3
+else:
+    AUCTION_LENGTH_MINUTES = 30
 
-AUCTION_LENGTH_MINUTES = 30
 
 class AuctionHandler:
     def __init__(self):

@@ -24,9 +24,15 @@ auction_handler = {}
 moderator_id = int(os.environ.get('MODER_ID'))
 going_auctions = {}
 auction_messages = {}
-MINUTES_TO_ENLARGE = 2
-TIME_FOR_AUTO_BIDS = 6
-ADDITIONAL_MINUTES = 5
+DEBUG_MODE = 0
+if DEBUG_MODE:
+    MINUTES_TO_ENLARGE = 1
+    TIME_FOR_AUTO_BIDS = 2
+    ADDITIONAL_MINUTES = 1
+else:
+    MINUTES_TO_ENLARGE = 2
+    TIME_FOR_AUTO_BIDS = 6
+    ADDITIONAL_MINUTES = 5
 
 
 async def end_auction(auction_id):
@@ -135,6 +141,7 @@ async def use_auto_bids(auction_id):
                     text += '\n\n*Вы являетесь лидером аукциона*'
                 else:
                     text += '\n\n*Вы не являетесь лидером аукциона*'
+                text += '\nЧтобы поднять ставку введите число выше текущей ставки'
                 await bot.edit_message_text(chat_id=m.chat.id, message_id=m.id, text=text,
                                             reply_markup=create_back_button(auction_id), parse_mode="Markdown")
             except:
@@ -786,7 +793,7 @@ async def brand_buttons_action(call):
                 state = '\n\n*Вы не являетесь лидером аукциона*'
             await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id,
                                         text=call.message.text + '\nТекущая ставка: ' + '*' + str(
-                                            get_max_bid(auction_id).amount) + '*' + f'\nКоличество участников: {len(get_auction_buyers(auction_id))}' + state,
+                                            get_max_bid(auction_id).amount) + '*' + f'\nКоличество участников: {len(get_auction_buyers(auction_id))}' + state + '\nЧтобы поднять ставку введите число выше текущей ставки',
                                         reply_markup=create_back_button(auction_id), parse_mode='Markdown')
             going_auctions[call.message.chat.id] = auction_id
             if auction_id not in auction_messages:
@@ -1120,6 +1127,7 @@ async def handle_request(message):
                                 text += '\n\n*Вы являетесь лидером аукциона*'
                             else:
                                 text += '\n\n*Вы не являетесь лидером аукциона*'
+                            text += '\nЧтобы поднять ставку введите число выше текущей ставки'
                             await bot.edit_message_text(chat_id=m.chat.id, message_id=m.id, text=text,
                                                         reply_markup=create_back_button(auction_id),
                                                         parse_mode="Markdown")
