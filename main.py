@@ -529,7 +529,7 @@ async def show_users(message):
         users = get_all_users()
         if users is not None:
             for user in users:
-                if user.id != moderator_id and user.ban - datetime.now() > timedelta(days=366 * 30):
+                if user.id != moderator_id and user.ban is not None and user.ban - datetime.now() > timedelta(days=366 * 30):
                     markup = types.InlineKeyboardMarkup(row_width=1)
                     markup.add(types.InlineKeyboardButton('Принять', callback_data='allow_' + str(user.id)))
                     markup.add(types.InlineKeyboardButton('Отклонить', callback_data='not_allow_' + str(user.id)))
