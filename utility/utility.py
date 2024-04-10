@@ -24,7 +24,7 @@ main_menu_message_for_moderator = main_menu_mess + '\n\n' + 'Список ком
                                                             '/show_users - открыть список пользователей для блокировки или разблокировки\n' \
                                                             '/waiting_users - открыть список пользователей, отправивших заявку на вступление\n'
 def escape_markdown(text):
-    escape_chars = '_*[]()~`>#+-=|{}.!'
+    escape_chars = '_*[]()~`>#+-=|{}!'
     return ''.join('\\' + char if char in escape_chars else char for char in text)
 
 
