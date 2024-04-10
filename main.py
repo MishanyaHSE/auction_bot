@@ -11,6 +11,7 @@ import asyncio
 from dotenv import load_dotenv
 from utility.utility import *
 from db.db_models import *
+from utility.constants import MINUTES_TO_ENLARGE, TIME_FOR_AUTO_BIDS, ADDITIONAL_MINUTES
 
 load_dotenv()
 bot = AsyncTeleBot(os.environ.get('BOT_TKN'))
@@ -24,15 +25,6 @@ auction_handler = {}
 moderator_id = int(os.environ.get('MODER_ID'))
 going_auctions = {}
 auction_messages = {}
-DEBUG_MODE = 0
-if DEBUG_MODE:
-    MINUTES_TO_ENLARGE = 1
-    TIME_FOR_AUTO_BIDS = 2
-    ADDITIONAL_MINUTES = 1
-else:
-    MINUTES_TO_ENLARGE = 2
-    TIME_FOR_AUTO_BIDS = 6
-    ADDITIONAL_MINUTES = 5
 
 
 async def end_auction(auction_id):
