@@ -22,7 +22,11 @@ main_menu_mess = f'Вы находитесь в главном меню, исп�
 
 main_menu_message_for_moderator = main_menu_mess + '\n\n' + 'Список команд модератора:\n' \
                                                             '/show_users - открыть список пользователей для блокировки или разблокировки\n' \
+
                                                             '/waiting_users - открыть список пользователей, отправивших заявку на вступление\n'
+def escape_markdown(text):
+    escape_chars = '_*[]()~`>#+-=|{}.!'
+    return ''.join('\\' + char if char in escape_chars else char for char in text)
 
 
 def is_positive_number(s):
@@ -56,15 +60,18 @@ def create_interest_message(interest):
            f'Максимальная стоимость: {interest.max_price}'
 
 
-def create_auction_message(auction):
+def create_auction_message(auction, is_markdown=False):
     item = get_item(auction.item_id)
     auction_info = f'Минимальный шаг: {auction.bid_step}\n' \
                    f'Начало: {auction.start_date} МСК\n' \
                    f'Конец: {auction.duration} МСК\n'
-    return f'Предмет:\n' + create_item_text(item) + '\n' + f'Аукцион:\n' + auction_info
+    item_info = create_item_text(item)
+    if is_markdown:
+        item_info = escape_markdown(item_info)
+    return f'Предмет:\n' + item_info + '\n' + f'Аукцион:\n' + auction_info
 
 
-def create_item_text(item):
+def create_item_text(item, is_markdown=False):
     box = 'Нет'
     docs = 'Нет'
     if item.box_available:
@@ -79,6 +86,8 @@ def create_item_text(item):
                f'Город: {item.city}\n'
     if item.comments is not None:
         text += f'Комментарий: {item.comments}\n'
+    if is_markdown:
+        text = escape_markdown(text)
     return text
 
 
