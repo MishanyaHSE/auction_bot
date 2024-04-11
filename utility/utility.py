@@ -82,8 +82,8 @@ def create_item_text(item, is_markdown=False):
                f'Коробка: ' + box + '\n'\
                f'Документы: ' + docs + '\n'\
                f'Город: {item.city}\n'
-    if get_auction_for_item(item.id).state == 'on_moderatiion' or get_auction_for_item(item.id).state == 'finished':
-        text += f'Начальная цена: {item.price}\n'
+    if get_auction_for_item(item.id) is None or get_auction_for_item(item.id).state == 'on_moderation' or get_auction_for_item(item.id).state == 'active':
+        text += f'Начальная цена, $: {item.price}\n'
     if item.comments is not None:
         text += f'Комментарий: {item.comments}\n'
     if is_markdown:

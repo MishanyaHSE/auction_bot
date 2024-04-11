@@ -505,18 +505,24 @@ def create_block_buttons(user_id):
 async def show_users(message):
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu' and message.chat.id == moderator_id:
         users = get_all_users()
-        for user in users:
-            if user.id != moderator_id:
-                text = f'Имя: {escape_markdown(user.username)}\n' \
-                       f'Тег: @{escape_markdown(user.nick)}\n' \
-                       f'Компания: {escape_markdown(user.company_name)}\n' \
-                       f'Сайт: {escape_markdown(user.company_website)}'
-                if is_blocked(user.id) and user.ban - datetime.now() <= timedelta(days=366 * 30):
-                    markup = create_unblock_button(user.id)
-                    text += f'\n*Заблокирован до {str(user.ban)}*'
-                else:
-                    markup = create_block_buttons(user.id)
-                await send_and_save_with_markup(message.chat.id, text, markup, 'Markdown')
+        # await send_and_save(message.chat.id, str(users is None) + str(len(users)))
+        # print()
+        # print(len(users))
+        if users is not None and len(users) > 1:
+            for user in users:
+                if user.id != moderator_id:
+                    text = f'Имя: {escape_markdown(user.username)}\n' \
+                           f'Тег: @{escape_markdown(user.nick)}\n' \
+                           f'Компания: {escape_markdown(user.company_name)}\n' \
+                           f'Сайт: {escape_markdown(user.company_website)}'
+                    if is_blocked(user.id) and user.ban - datetime.now() <= timedelta(days=366 * 30):
+                        markup = create_unblock_button(user.id)
+                        text += f'\n*Заблокирован до {str(user.ban)}*'
+                    else:
+                        markup = create_block_buttons(user.id)
+                    await send_and_save_with_markup(message.chat.id, text, markup, 'Markdown')
+        else:
+            await send_and_save(message.chat.id, 'В боте нет ни одного зарегистрированного пользователя в данный момент!')
     else:
         await send_and_save_with_markup(message.chat.id,
                                         'Данную команду можно использовать только в главном меню, обладая правами модератора',
@@ -527,15 +533,19 @@ async def show_users(message):
 async def show_users(message):
     if message.chat.id in states and states[message.chat.id] == 'on_main_menu' and message.chat.id == moderator_id:
         users = get_all_users()
+        flag = False
         if users is not None:
             for user in users:
                 if user.id != moderator_id and user.ban is not None and user.ban - datetime.now() > timedelta(days=366 * 30):
+                    flag = True
                     markup = types.InlineKeyboardMarkup(row_width=1)
                     markup.add(types.InlineKeyboardButton('Принять', callback_data='allow_' + str(user.id)))
                     markup.add(types.InlineKeyboardButton('Отклонить', callback_data='not_allow_' + str(user.id)))
                     await send_and_save_with_markup(moderator_id,
                                                     'Новый пользователь желает зарегистрироваться.\n' + create_user_info_for_moderation(
                                                         user), markup)
+            if not flag:
+                await send_and_save(moderator_id, 'Сейчас нет пользователей, ожидающих модерации аккаунта!')
         else:
             await send_and_save(moderator_id, 'Сейчас нет пользователей, ожидающих модерации аккаунта!')
     else:
@@ -577,7 +587,7 @@ async def open_items(message):
                         if auction.state == 'active':
                             text = f'\n\n*Предмет выставлен на аукционе*\nНачало: {auction.start_date}'
                         elif auction.state == 'going':
-                            text = f'\n\n*Предмет в данный момент разыгрывается на аукционе*\nТекущая ставка: *{get_max_bid(auction.id).amount}*\nАукцион закончится: {auction.duration}\nКоличество участников: {len(get_auction_buyers(auction_id))}'
+                            text = f'\n\n*Предмет в данный момент разыгрывается на аукционе*\nТекущая ставка: *{get_max_bid(auction.id).amount}*\nАукцион закончится: {auction.duration}\nКоличество участников: {len(get_auction_buyers(auction.id))}'
                         elif auction.state == 'finished' and auction.winner_id is not None:
                             text = f'\n\n*Вы продали предмет на аукционе*\nЦена: {get_max_bid(auction.id).amount}\nПокупатель: @{escape_markdown(get_user_info(auction.winner_id).nick)}'
                         elif auction.state == 'finished':
