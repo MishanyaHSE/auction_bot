@@ -317,7 +317,7 @@ def get_photos_for_item(i_id):
 
 def get_auction_buyers(auction_id):
     with connection.session as db:
-        buyers = db.query(Buyer).filter(Buyer.auction_id == auction_id)
+        buyers = db.query(Buyer).filter(Buyer.auction_id == auction_id).all()
         return buyers
 
 

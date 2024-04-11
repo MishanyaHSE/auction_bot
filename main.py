@@ -108,7 +108,7 @@ async def start_auction(auction_id):
     auction_messages[auction_id] = []
     await create_end_auction_task(auction_id)
     await create_autobids_task(auction_id)
-    await send_notifications_when_auction_is_ending(auction_id)
+    await create_notification_task(auction_id)
 
 
 async def unblock_users():
@@ -692,7 +692,7 @@ async def send_notifications_when_auction_is_ending(auction_id):
             photos_ids += '_' + str(msg.id)
             messages_to_delete[auction.owner_id].append(msg.id)
         await send_and_save(id, 'АУКЦИОН ЗАКОНЧИТСЯ ЧЕРЕЗ 5 МИНУТ!\n\n' +
-                            create_auction_message(auction, True) + f'Текущая ставка:*{get_max_bid(auction_id).amount}*\nКоличество участников: {len(get_auction_buyers(auction_id))}',
+                            create_auction_message(auction, True) + f'Текущая ставка: *{get_max_bid(auction_id).amount}*\nКоличество участников: {len(get_auction_buyers(auction_id))}',
                             'Markdown')
     schedule.clear('end_auction_' + str(auction_id))
 
@@ -774,7 +774,7 @@ async def brand_buttons_action(call):
                 'Ваш аукцион был отклонен! Убедитесь, что в объявлении '
                 f'не было ошибки или свяжитесь с модератором @{get_user_info(moderator_id).nick}')
         elif call.data.find('participate') != -1:
-            bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None)
+            await bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None)
             buyers = get_auction_buyers(call.data.split('_')[1])
             is_not_already_buyer = True
             for buyer in buyers:
