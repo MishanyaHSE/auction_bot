@@ -32,13 +32,10 @@ async def end_auction(auction_id):
     buyers = get_auction_buyers(auction_id)
     auction = get_auction(auction_id)
     item = get_item(auction.item_id)
-    await send_and_save(moderator_id, 'in func')
     if get_max_bid(auction_id).amount == item.price:
         await send_and_save(item.owner_id, 'К сожалению, аукцион не состоялся, ни один пользователь не сделал ставку.')
-        await send_and_save(moderator_id, 'here1')
         return
     else:
-        await send_and_save(moderator_id, 'here2')
         await send_and_save(auction.owner_id,
                             f'Ваш аукцион завершен, победная ставка {get_max_bid(auction_id).amount}. Для получения оплаты и отправки свяжитесь с @{get_user_info(auction.winner_id).nick}')
     for buyer in buyers:
@@ -49,10 +46,10 @@ async def end_auction(auction_id):
             await send_and_save(buyer.buyer_id,
                                 f'Вам не удалось выиграть аукцион, победная ставка {get_max_bid(auction_id).amount}.')
     schedule.clear('end_auction_' + str(auction_id))
+    schedule.clear('auto_bids_' + str(auction_id))
 
 
 async def create_end_auction_task(auction_id):
-    await send_and_save(moderator_id, 'end_auction_task_created')
     time = str(get_auction(auction_id).duration.time())[:-3]
     schedule.every().day.at(time).do(end_auction, auction_id).tag('end_auction_' + str(auction_id))
 
@@ -698,7 +695,7 @@ async def send_notifications_when_auction_is_ending(auction_id):
         await send_and_save(id, 'АУКЦИОН ЗАКОНЧИТСЯ ЧЕРЕЗ 5 МИНУТ!\n\n' +
                             create_auction_message(auction, True) + f'Текущая ставка: *{get_max_bid(auction_id).amount}*\nКоличество участников: {len(get_auction_buyers(auction_id))}',
                             'Markdown')
-    schedule.clear('end_auction_' + str(auction_id))
+    schedule.clear('notifications_' + str(auction_id))
 
 
 def main_menu_message(chat_id):
