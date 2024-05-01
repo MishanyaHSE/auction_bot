@@ -189,9 +189,11 @@ def start_schedule_for_all_auctions():
     for auction in auctions:
         if auction.state == 'going':
             update_auction_state(auction.id, 'finished')
-        elif auction.state == 'active':
+        elif auction.state == 'active' and auction.start_date <= datetime.now():
             time = str(auction.start_date.time())[:-3]
             schedule.every().day.at(time).do(start_auction, auction.id).tag('start_auction_' + str(auction.id))
+        else:
+            update_auction_state(auction.id, 'finished')
 
 
 start_schedule_for_all_auctions()
