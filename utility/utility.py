@@ -41,16 +41,16 @@ def is_positive_number(s):
 def create_user_info_message(user):
     return f'Ваше имя: {user.username}\n' \
            f'Ваш номер телефона: {user.phone}\n' \
-           f'Название вашей компании: {user.company_name}\n' \
-           f'Вебсайт компании: {user.company_website}\n'
+           # f'Название вашей компании: {user.company_name}\n' \
+           # f'Вебсайт компании: {user.company_website}\n'
 
 
 def create_user_info_for_moderation(user):
     return f'Имя: {user.username}\n' \
            f'Номер телефона: {user.phone}\n' \
-           f'Название компании: {user.company_name}\n' \
-           f'Вебсайт компании: {user.company_website}\n' \
            f'Тег: @{user.nick}\n'
+           # f'Название компании: {user.company_name}\n' \
+           # f'Вебсайт компании: {user.company_website}\n' \
 
 
 def create_interest_message(interest):

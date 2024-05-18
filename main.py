@@ -516,8 +516,9 @@ async def show_users(message):
                 if user.id != moderator_id:
                     text = f'Имя: {escape_markdown(user.username)}\n' \
                            f'Тег: @{escape_markdown(user.nick)}\n' \
-                           f'Компания: {escape_markdown(user.company_name)}\n' \
-                           f'Сайт: {escape_markdown(user.company_website)}'
+
+                           # f'Компания: {escape_markdown(user.company_name)}\n' \
+                           # f'Сайт: {escape_markdown(user.company_website)}'
                     if is_blocked(user.id) and user.ban - datetime.now() <= timedelta(days=366 * 30):
                         markup = create_unblock_button(user.id)
                         text += f'\n*Заблокирован до {str(user.ban)}*'
@@ -903,8 +904,7 @@ async def save_photos_to_folder(info_list, item_id):
 
 def create_user(user_id):
     hl = reg_handlers[user_id]
-    return User(id=user_id, username=hl.name, company_name=hl.company_name,
-                company_website=hl.website, phone=hl.phone, nick=hl.nick, ban=hl.ban)
+    return User(id=user_id, username=hl.name, phone=hl.phone, nick=hl.nick, ban=hl.ban)
 
 
 def create_photo(name, id):
