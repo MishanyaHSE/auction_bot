@@ -1,6 +1,7 @@
 from datetime import date, time, datetime, timedelta
-from utility.utility import is_positive_number, all_brands, other_brands
+from utility.utility import is_positive_number, all_brands, other_brands, get_message
 from utility.constants import AUCTION_LENGTH_MINUTES
+
 
 class AuctionHandler:
     def __init__(self):
@@ -22,19 +23,20 @@ class AuctionHandler:
         }
         self.currentState = 'getStartDate'
 
-    def create_auction(self, text):
+    def create_auction(self, text, user_id):
         if self.currentState == 'getStartDate':
             self.currentState = 'getStartTime'
-            return self.states['getStartDate']
+            return get_message(self.states['getStartDate'], user_id)
         elif self.currentState == 'getStartTime':
             if len(text) == 5 and text[2] == '.':
                 self.start_date = date(2024, int(text.split('.')[1]), int(text.split('.')[0]))
                 if self.start_date < datetime.now().date():
-                    return f'Некорректная дата аукциона. Сегодня {datetime.now().date()}\n' + self.states['getStartDate']
+                    return f'{get_message("Некорректная дата аукциона.Сегодня", user_id)} {datetime.now().date()}\n' + get_message(
+                        self.states['getStartDate'], user_id)
                 self.currentState = 'check'
-                return self.states['getStartTime']
+                return get_message(self.states['getStartTime'], user_id)
             else:
-                return 'Дата должна быть указана в формате ДД.ММ(например, 12.03)'
+                return get_message('Дата должна быть указана в формате ДД.ММ(например, 12.03)', user_id)
         elif self.currentState == 'check':
             if len(text) == 5 and text[2] == ':':
                 hours = text.split(':')[0]
@@ -46,7 +48,8 @@ class AuctionHandler:
                 hours = int(hours)
                 minutes = int(minutes)
                 if hours < 0 or hours > 23 or minutes < 0 or minutes > 59:
-                    return "Некорректное время начала аукциона.\n" + self.states['getStartTime']
+                    return get_message("Некорректное время начала аукциона.\n", user_id) + get_message(
+                        self.states['getStartTime'], user_id)
                 self.start_time = time(hours, minutes)
                 if minutes + AUCTION_LENGTH_MINUTES <= 59:
                     end_time = time(hours, minutes + AUCTION_LENGTH_MINUTES)
@@ -56,24 +59,26 @@ class AuctionHandler:
                     else:
                         end_time = time(0, (minutes + AUCTION_LENGTH_MINUTES) % 60)
 
-                self.end_date_time = datetime.combine(self.start_date, end_time) + timedelta(days=1 if not end_time.hour else 0)
+                self.end_date_time = datetime.combine(self.start_date, end_time) + timedelta(
+                    days=1 if not end_time.hour else 0)
                 self.start_date_time = datetime.combine(self.start_date, self.start_time)
                 if self.start_date_time <= datetime.now():
-                    return "Некорректное время начала аукциона.\n" + self.states['getStartTime']
+                    return get_message("Некорректное время начала аукциона.\n", user_id) + get_message(
+                        self.states['getStartTime'], user_id)
                 self.currentState = 'end'
-                auction_inf = self.auction_info() + 'Все верно?'
+                auction_inf = self.auction_info(user_id) + get_message('Все верно?', user_id)
                 return auction_inf
             else:
-                return 'Время должно быть указано в формате ЧЧ:ММ(например, 15:10 или 06:03)'
-        elif self.currentState == 'end' and text == 'Да':
+                return get_message('Время должно быть указано в формате ЧЧ:ММ(например, 15:10 или 06:03)', user_id)
+        elif self.currentState == 'end' and text in ['Да', 'Yes']:
             self.currentState = 'anotherOne'
-            return 'Отлично! Аукцион создан и отправлен на модерацию'
-        elif self.currentState == 'end' and text == 'Нет':
+            return get_message('Отлично! Аукцион создан и отправлен на модерацию', user_id)
+        elif self.currentState == 'end' and text in ['Нет', 'No']:
             self.currentState = 'getStartDate'
-            return self.states['getBidStep']
+            return get_message(self.states['getBidStep'], user_id)
         return ''
 
-    def auction_info(self):
-        return f'Минимальный шаг ставки: {self.bid_step}\n' \
-               f'Дата и время начала: {self.start_date_time}\n' \
-               f'Дата и время окончания: {self.end_date_time}\n'
+    def auction_info(self, user_id):
+        return f'{get_message("Минимальный шаг ставки:", user_id)} {self.bid_step}\n' \
+               f'{get_message("Дата и время начала:", user_id)} {self.start_date_time}\n' \
+               f'{get_message("Дата и время окончания:", user_id)} {self.end_date_time}\n'
