@@ -24,6 +24,7 @@ class User(Base):
     status = Column(String)
     ban = Column(DateTime)
     nick = Column(String)
+    language = Column(Integer)
 
     items = relationship("Item", back_populates="owner")
 
@@ -534,5 +535,12 @@ def get_users_without_interests():
             if user.id not in users_with_interests_ids:
                 users_without_interests_ids.append(user.id)
         return users_without_interests_ids
+
+
+def change_language(user_id):
+    with connection.session as db:
+        user = db.get(User, user_id)
+        user.language = (user.language + 1) % 2
+        db.commit()
 
 

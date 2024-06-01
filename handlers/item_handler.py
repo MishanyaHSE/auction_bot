@@ -1,4 +1,4 @@
-from utility.utility import all_brands, other_brands, is_positive_number
+from utility.utility import all_brands, other_brands, is_positive_number, get_message
 
 
 class NewItem:
@@ -32,90 +32,92 @@ class NewItem:
         }
         self.currentState = 'getBrand'
 
-    def create_item(self, text):
+    def create_item(self, text, user_id):
         if self.currentState == 'getBrand':
             self.currentState = 'getReference'
-            return self.states['getBrand']
+            return get_message(self.states['getBrand'], user_id)
         elif self.currentState == 'getReference':
             self.brand = text
             if self.brand not in all_brands and self.brand not in other_brands:
                 self.currentState = 'getBrand'
-                return 'Выберете из ячеек', self.states['getBrand']
+                return get_message('Выберете из ячеек', user_id), get_message(self.states['getBrand'], user_id)
             self.currentState = 'getPrice'
-            return self.states['getReference']
+            return get_message(self.states['getReference'], user_id)
         elif self.currentState == 'getPrice':
             self.reference = text
             self.currentState = 'getPhoto'
-            return self.states['getPrice']
+            return get_message(self.states['getPrice'], user_id)
         elif self.currentState == 'getPhoto':
             if is_positive_number(text):
                 self.price = text
                 self.currentState = 'getBox_available'
-                return self.states['getPhoto']
-            return 'Цена должна быть целым положительным числом!\n' + self.states['getPrice']
+                return get_message(self.states['getPhoto'], user_id)
+            return get_message('Цена должна быть целым положительным числом!\n', user_id) + get_message(self.states['getPrice'], user_id)
         elif self.currentState == 'getBox_available':
             self.currentState = 'getDocument_available'
-            return self.states['getBox_available']
+            return get_message(self.states['getBox_available'], user_id)
         elif self.currentState == 'getDocument_available':
-            if text == 'Да':
+            if text in ['Yes', 'Да']:
                 self.box_available = True
-            elif text == 'Нет':
+            elif text in ['Нет', 'No']:
                 self.box_available = False
             else:
-                return 'Необходимо выбрать Да/Нет'
+                return get_message('Необходимо выбрать Да/Нет', user_id)
             self.currentState = 'getLocation'
-            return self.states['getDocument_available']
+            return get_message(self.states['getDocument_available'], user_id)
         elif self.currentState == 'getLocation':
-            if text == 'Да':
+            if text in ['Yes', 'Да']:
                 self.document_available = True
-            elif text == 'Нет':
+            elif text in ['Нет', 'No']:
                 self.document_available = False
             else:
-                return 'Необходимо выбрать Да/Нет'
+                return get_message('Необходимо выбрать Да/Нет', user_id)
             self.currentState = 'getComments'
-            return self.states['getLocation']
+            return get_message(self.states['getLocation'], user_id)
         elif self.currentState == 'getComments':
             if len(text) > 30:
-                return 'Вы ввели слишком длинное название. Введите название города, из которого отправите часы, комментарии можно указать позже'
+                return get_message('Вы ввели слишком длинное название. Введите название города, из которого отправите часы, комментарии можно указать позже', user_id)
             else:
                 self.currentState = 'check'
                 self.city = text
-                return self.states['getComments']
+                return get_message(self.states['getComments'], user_id)
         elif self.currentState == 'check':
             self.comments = text
-            if self.comments == 'Пропустить':
+            if self.comments in ['Пропустить', 'Skip']:
                 self.comments = None
-            auction_inf = self.states['check'] + '\n' + self.auction_info() + 'Все верно?'
+            auction_inf = get_message(self.states['check'], user_id) + '\n' + self.auction_info(user_id) + get_message('Все верно?', user_id)
             self.currentState = 'end'
             return auction_inf
-        elif self.currentState == 'end' and text == 'Да':
+        elif self.currentState == 'end' and (text == 'Да' or text == 'Yes'):
             self.currentState = 'anotherOne'
-            return 'Отлично! Предмет добавлен. Желаете добавить еще один?'
-        elif self.currentState == 'end' and text == 'Нет':
+            return get_message('Отлично! Предмет добавлен. Желаете добавить еще один?', user_id)
+        elif self.currentState == 'end' and (text == 'Нет' or text == 'No'):
             self.currentState = 'getReference'
             self.photos.clear()
             return self.states['getBrand']
-        elif self.currentState == 'anotherOne' and text == 'Да':
+        elif self.currentState == 'anotherOne' and (text == 'Да' or text == 'Yes'):
             self.currentState = 'getReference'
             return self.states['getBrand']
         return ''
 
-    def auction_info(self):
+    def auction_info(self, user_id):
         box = 'Нет'
         docs = 'Нет'
-        if self.document_available:
-            docs = 'Да'
         if self.box_available:
             box = 'Да'
-        text = f'Бренд: {self.brand}\n' \
-               f'Референс: {self.reference}\n' \
-               f'Цена: {self.price}\n' \
-               f'Коробка: {box}\n' \
-               f'Документы: {docs}\n' \
-               f'Город: {self.city}\n'
+        if self.document_available:
+            docs = 'Да'
+        box = get_message(box, user_id)
+        docs = get_message(docs, user_id)
+        text = f'{get_message("Бренд:", user_id)} {self.brand}\n' \
+               f'{get_message("Референс:", user_id)} {self.reference}\n' \
+               f'{get_message("Коробка:", user_id)} ' + box + '\n' \
+               f'{get_message("Документы:", user_id)} ' + docs + '\n' \
+               f'{get_message("Город:", user_id)} {self.city}\n'
         if self.comments is not None:
-            text += f'Коментарий: {self.comments}\n'
+            text += f'{get_message("Комментарий:", user_id)} {self.comments}\n'
         return text
 
-    def append_photo(self, file_info):
-        self.photos.append(file_info)
+
+def append_photo(self, file_info):
+    self.photos.append(file_info)
