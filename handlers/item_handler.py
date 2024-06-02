@@ -52,7 +52,8 @@ class NewItem:
                 self.price = text
                 self.currentState = 'getBox_available'
                 return get_message(self.states['getPhoto'], user_id)
-            return get_message('Цена должна быть целым положительным числом!\n', user_id) + get_message(self.states['getPrice'], user_id)
+            return get_message('Цена должна быть целым положительным числом!\n', user_id) + get_message(
+                self.states['getPrice'], user_id)
         elif self.currentState == 'getBox_available':
             self.currentState = 'getDocument_available'
             return get_message(self.states['getBox_available'], user_id)
@@ -76,7 +77,9 @@ class NewItem:
             return get_message(self.states['getLocation'], user_id)
         elif self.currentState == 'getComments':
             if len(text) > 30:
-                return get_message('Вы ввели слишком длинное название. Введите название города, из которого отправите часы, комментарии можно указать позже', user_id)
+                return get_message(
+                    'Вы ввели слишком длинное название. Введите название города, из которого отправите часы, комментарии можно указать позже',
+                    user_id)
             else:
                 self.currentState = 'check'
                 self.city = text
@@ -85,7 +88,8 @@ class NewItem:
             self.comments = text
             if self.comments in ['Пропустить', 'Skip']:
                 self.comments = None
-            auction_inf = get_message(self.states['check'], user_id) + '\n' + self.auction_info(user_id) + get_message('Все верно?', user_id)
+            auction_inf = get_message(self.states['check'], user_id) + '\n' + self.auction_info(user_id) + get_message(
+                'Все верно?', user_id)
             self.currentState = 'end'
             return auction_inf
         elif self.currentState == 'end' and (text == 'Да' or text == 'Yes'):
@@ -112,12 +116,11 @@ class NewItem:
         text = f'{get_message("Бренд:", user_id)} {self.brand}\n' \
                f'{get_message("Референс:", user_id)} {self.reference}\n' \
                f'{get_message("Коробка:", user_id)} ' + box + '\n' \
-               f'{get_message("Документы:", user_id)} ' + docs + '\n' \
-               f'{get_message("Город:", user_id)} {self.city}\n'
+                                                              f'{get_message("Документы:", user_id)} ' + docs + '\n' \
+                                                                                                                f'{get_message("Город:", user_id)} {self.city}\n'
         if self.comments is not None:
             text += f'{get_message("Комментарий:", user_id)} {self.comments}\n'
         return text
 
-
-def append_photo(self, file_info):
-    self.photos.append(file_info)
+    def append_photo(self, file_info):
+        self.photos.append(file_info)
