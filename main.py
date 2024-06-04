@@ -875,7 +875,7 @@ async def brand_buttons_action(call):
             date += timedelta(days=days_in_month)
             block_user(user_id, date)
             await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id,
-                                        text=call.message.text + f'\n\n{get_message("Заблокирован до", call.message.chat.id)} {str(date)}*',
+                                        text=call.message.text + f'*\n\n{get_message("Заблокирован до", call.message.chat.id)} {str(date)}*',
                                         reply_markup=create_unblock_button(user_id), parse_mode='Markdown')
         elif call.data.find('unblock') != -1:
             user_id = call.data.split('_')[1]
