@@ -901,7 +901,7 @@ async def brand_buttons_action(call):
             states.pop(int(call.data.split('_')[2]), None)
         elif call.data.find('allow') != -1:
             user_id = int(call.data.split('_')[1])
-            await send_and_save(user_id, get_message(get_message('Модератор принял вашу заявку на вступление!', user_id), user_id))
+            await send_and_save(user_id, get_message('Модератор принял вашу заявку на вступление!', user_id))
             unblock_user(user_id)
             await clear_chat(user_id)
             await send_and_save(user_id, main_menu_message(user_id))
