@@ -981,7 +981,7 @@ def create_item(user_id):
 def create_auction(user_id):
     hl = auction_handler[user_id]
     return Auction(bid_step=hl.bid_step, start_date=hl.start_date_time, duration=hl.end_date_time, item_id=hl.item_id,
-                   owner_id=user_id, state='on_moderation')
+                   owner_id=user_id, state='active')
 
 
 def create_bid(amount, user_id, auction_id):
@@ -1108,7 +1108,20 @@ async def handle_request(message):
                 items[message.chat.id].id = new_item_id
                 auction_handler[message.chat.id] = AuctionHandler()
                 auction_handler[message.chat.id].item_id = new_item_id
-                await send_and_save(message.chat.id, auction_handler[message.chat.id].create_auction('', message.chat.id))
+                # await send_and_save(message.chat.id, auction_handler[message.chat.id].create_auction('', message.chat.id))
+                # ONLY FOR DELETING DURATION AND DATE
+                msges = await bot.send_media_group(message.chat.id,
+                                                   create_photos_for_item(get_item(items[message.chat.id].id)))
+                photos_ids = ''
+                for msg in msges:
+                    photos_ids += '_' + str(msg.id)
+                    messages_to_delete[message.chat.id].append(msg.id)
+                msg = get_message("*Часы:*\n", message.chat.id) + create_item_text(
+                    get_item(auction_handler[message.chat.id].item_id), message.chat.id, True) + get_message(
+                    '*Аукцион:*\n', message.chat.id) + auction_handler[message.chat.id].create_auction('', message.chat.id)
+                await send_and_save_with_markup(message.chat.id, msg, create_yes_or_no_button(message.chat.id),
+                                                'Markdown')
+                # ONLY FOR DELETING DURATION AND DATE
                 return
             if current_bot_message.find('Имеется ли коробка от часов:') != -1 or current_bot_message.find(
                     'Документы от часов') != -1 or current_bot_message.find('Необходимо') != -1 or \
@@ -1160,14 +1173,23 @@ async def handle_request(message):
                 await send_and_save_with_markup(message.chat.id, current_bot_message, create_brand_buttons(message.chat.id))
                 return
             await send_and_save(message.chat.id, current_bot_message)
-        if current_bot_message in ['Отлично! Аукцион создан и отправлен на модерацию', 'Great! The auction has been created and sent for moderation']:
+        # if current_bot_message in ['Отлично! Аукцион создан и отправлен на модерацию', 'Great! The auction has been created and sent for moderation']:
+        if current_bot_message in ['Отлично! Аукцион создан и опубликован', 'Great! The auction has been created and published']:
             await clear_chat(message.chat.id)
             states[message.chat.id] = 'on_main_menu'
             await send_and_save(message.chat.id, main_menu_message(message.chat.id))
-            new_auction_id = save_auction(create_auction(message.chat.id))
+            auction_id = save_auction(create_auction(message.chat.id))
+            auction = get_auction(auction_id)
             save_bid(
-                create_bid(get_item(auction_handler[message.chat.id].item_id).price, message.chat.id, new_auction_id))
-            await send_auction_to_moderation(new_auction_id)
+                create_bid(get_item(auction_handler[message.chat.id].item_id).price, message.chat.id, auction_id))
+            await send_notifications_about_auction(auction_id)
+            time = str(auction.start_date.time())[:-3]
+            if datetime.now() < auction.start_date:
+                schedule.every().day.at(time).do(start_auction, auction_id).tag(
+                    'start_auction_' + str(auction_id))
+            elif auction.start_date < datetime.now() < auction.duration:
+                await start_auction(auction_id)
+            # await send_auction_to_moderation(new_auction_id)
     elif states[message.chat.id].find('on_auction') != -1:
         if is_positive_number(message.text):
             auction_id = states[message.chat.id].split('_')[2]
