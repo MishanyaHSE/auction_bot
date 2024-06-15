@@ -140,8 +140,7 @@ async def use_auto_bids(auction_id):
     if result != 0:
         for m in auction_messages[auction_id]:
             try:
-                text = create_auction_message(get_auction(auction_id), m.chat.id) + '\n' + get_message('Текущая ставка:', m.chat.id) + ' *' + str(
-                    get_max_bid(auction_id).amount) + '*' + f'\n{get_message("Количество участников:", m.chat.id)} {len(get_auction_buyers(auction_id))}'
+                text = create_auction_message(get_auction(auction_id), m.chat.id) + f'\n{get_message("Количество участников:", m.chat.id)} {len(get_auction_buyers(auction_id))}'
                 if m.chat.id == auction.winner_id:
                     text += '\n\n' + get_message('*Вы являетесь лидером аукциона*', m.chat.id)
                 else:
@@ -630,7 +629,7 @@ async def open_items(message):
                         if auction.state == 'active':
                             text = '\n\n*' + get_message("Предмет выставлен на аукционе * \nНачало:", message.chat.id) + f' {auction.start_date}'
                         elif auction.state == 'going':
-                            text = f'\n\n*' + get_message("Предмет в данный момент разыгрывается на аукционе", message.chat.id) + f'*\n{get_message("Текущая ставка:", message.chat.id)} *{get_max_bid(auction.id).amount}*\n{get_message("Аукцион закончится:", message.chat.id)} {auction.duration}\n{get_message("Количество участников:", message.chat.id)} {len(get_auction_buyers(auction.id))}'
+                            text = f'\n\n*' + get_message("Предмет в данный момент разыгрывается на аукционе", message.chat.id) + f'\n{get_message("Аукцион закончится:", message.chat.id)} {auction.duration}\n{get_message("Количество участников:", message.chat.id)} {len(get_auction_buyers(auction.id))}'
                         elif auction.state == 'finished' and auction.winner_id is not None:
                             text = f'\n\n*' + get_message("Вы продали предмет на аукционе * \nЦена:", message.chat.id) + f' {get_max_bid(auction.id).amount}\n{get_message("Покупатель:", message.chat.id)} @{escape_markdown(get_user_info(auction.winner_id).nick)}'
                         elif auction.state == 'finished':
@@ -738,7 +737,7 @@ async def send_notifications_when_auction_is_ending(auction_id):
             photos_ids += '_' + str(msg.id)
             messages_to_delete[auction.owner_id].append(msg.id)
         await send_and_save(id, get_message('АУКЦИОН ЗАКОНЧИТСЯ ЧЕРЕЗ 5 МИНУТ!', id) + '\n\n' +
-                            create_auction_message(auction, id, True) + f'{get_message("Текущая ставка:", id)} *{get_max_bid(auction_id).amount}*\n{get_message("Количество участников:", id)} {len(get_auction_buyers(auction_id))}',
+                            create_auction_message(auction, id, True) + f'{get_message("Количество участников:", id)} {len(get_auction_buyers(auction_id))}',
                             'Markdown')
     schedule.clear('notifications_' + str(auction_id))
 
@@ -842,8 +841,7 @@ async def brand_buttons_action(call):
             else:
                 state = '\n\n' + get_message('*Вы не являетесь лидером аукциона*', call.message.chat.id)
             await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id,
-                                        text=call.message.text + '\n' + get_message('Текущая ставка:', call.message.chat.id) + ' *' + str(
-                                            get_max_bid(auction_id).amount) + '*' + f'\n{get_message("Количество участников:", call.message.chat.id)} {len(get_auction_buyers(auction_id))}' + state + '\n' + get_message('Чтобы поднять ставку введите число выше текущей ставки', call.message.chat.id),
+                                        text=call.message.text + f'\n{get_message("Количество участников:", call.message.chat.id)} {len(get_auction_buyers(auction_id))}' + state + '\n' + get_message('Чтобы поднять ставку введите число выше текущей ставки', call.message.chat.id),
                                         reply_markup=create_back_button(auction_id, call.message.chat.id), parse_mode='Markdown')
             going_auctions[call.message.chat.id] = auction_id
             if auction_id not in auction_messages:
@@ -1210,8 +1208,7 @@ async def handle_request(message):
                     auction = get_auction(auction_id)
                     for m in auction_messages[auction_id]:
                         try:
-                            text = create_auction_message(get_auction(auction_id), m.chat.id) + '\n' + get_message('Текущая ставка:', m.chat.id) + ' *' + str(
-                                get_max_bid(auction_id).amount) + '*' + '\n' + f'{get_message("Количество участников:", m.chat.id)} {len(get_auction_buyers(auction_id))}'
+                            text = create_auction_message(get_auction(auction_id), m.chat.id) + '\n' + f'{get_message("Количество участников:", m.chat.id)} {len(get_auction_buyers(auction_id))}'
                             if m.chat.id == auction.winner_id:
                                 text += '\n\n' + get_message('*Вы являетесь лидером аукциона*', m.chat.id)
                             else:
@@ -1233,8 +1230,7 @@ async def handle_request(message):
                         messages_to_delete[previous_winner].append(msg.id)
                     await send_and_save_with_markup(previous_winner,
                                                     get_message("ВАШУ СТАВКУ ПЕРЕБИЛИ\n", previous_winner) + create_auction_message(
-                                                        auction, previous_winner, True) + '\n' + get_message('Текущая ставка:', previous_winner) + ' *' + str(
-                                                        get_max_bid(auction_id).amount) + '*' + f'\n{get_message("Количество участников:", previous_winner)} {len(get_auction_buyers(auction_id))}', markup, 'Markdown')
+                                                        auction, previous_winner, True) + f'\n{get_message("Количество участников:", previous_winner)} {len(get_auction_buyers(auction_id))}', markup, 'Markdown')
                 else:
                     await send_and_save(message.chat.id, get_message('Ставка должна быть кратна шагу аукциона', message.chat.id))
             else:

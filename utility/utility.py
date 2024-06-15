@@ -203,6 +203,7 @@ all_text_messages = {'Пожалуйста, укажите ваше имя:': ['
                      'Свяжитесь с': ['Свяжитесь с', 'Contact'],
                      'Предмет:': ['Предмет:', 'Watch:'],
                      'Отлично! Аукцион создан и опубликован': ['Отлично! Аукцион создан и опубликован', 'Great! The auction has been created and published'],
+                     'Текущая ставка, $:': ['Текущая ставка, $:', 'Current bid, $:'],
                      '': ['', '']
                      }
 
@@ -255,6 +256,8 @@ def create_auction_message(auction, user_id, is_markdown=False):
     auction_info = f'{get_message("Минимальный шаг:", user_id)} {auction.bid_step}\n' \
                    f'{get_message("Начало:", user_id)} {auction.start_date} {get_message("МСК", user_id)}\n' \
                    f'{get_message("Конец:", user_id)} {auction.duration} {get_message("МСК", user_id)}\n'
+    if get_auction_for_item(item.id).state == 'going':
+        auction_info += f'{get_message("Текущая ставка, $:", user_id)} *{get_max_bid(get_auction_for_item(item.id).id).amount}*'
     item_info = create_item_text(item, user_id)
     if is_markdown:
         item_info = escape_markdown(item_info)
@@ -274,9 +277,9 @@ def create_item_text(item, user_id, is_markdown=False):
            f'{get_message("Референс:", user_id)} {item.reference}\n' \
            f'{get_message("Коробка:", user_id)} ' + box + '\n' \
            f'{get_message("Документы:", user_id)} ' + docs + '\n' \
-           f'{get_message("Город:", user_id)} {item.city}\n'
+           f'{get_message("Город:", user_id)} {escape_markdown(item.city)}\n'
     if get_auction_for_item(item.id) is None or get_auction_for_item(
-            item.id).state == 'on_moderation' or get_auction_for_item(item.id).state == 'active':
+            item.id).state in ['on_moderation', 'active', 'going']:
         text += f'{get_message("Начальная цена, $:", user_id)} {item.price}\n'
     if item.comments is not None:
         text += f'{get_message("Комментарий:", user_id)} {item.comments}\n'

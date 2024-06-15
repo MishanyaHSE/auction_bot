@@ -73,7 +73,7 @@ class AuctionHandler:
             self.start_date = datetime.now().date()
             self.start_time = time(int(datetime.now().hour), (datetime.now().minute))
             self.start_date_time = datetime.combine(self.start_date, self.start_time)
-            self.end_date_time = self.start_date_time + timedelta(days=1)
+            self.end_date_time = self.start_date_time + timedelta(minutes=AUCTION_LENGTH_MINUTES - 1)
             self.currentState = 'end'
             auction_inf = self.auction_info(user_id) + get_message('Все верно?', user_id)
             return auction_inf
